@@ -1,0 +1,39 @@
+server:
+  port: 8001
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: kotlin-service
+
+  webflux:
+    base-path: /
+  data:
+    r2dbc:
+      repositories:
+        enabled: true
+
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_SERVER:localhost:5433}/test
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:secret}
+
+  liquibase:
+    url: jdbc:postgresql://${POSTGRES_SERVER:localhost:5433}/test
+    user: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:secret}
+    change-log: classpath:db.migration/db.changelog-master.yaml
+    enabled: true
+
+springdoc:
+  api-docs:
+    path: /api/v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+info:
+  app:
+    name: ${spring.application.name}
+    version: "@application.version@"
+    description: "@application.description@"
+
