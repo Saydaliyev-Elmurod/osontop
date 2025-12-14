@@ -14,7 +14,7 @@ import javax.crypto.SecretKey
 
 @Service
 class JwtService(
-  @Value("\${application.token.signing.key}") private val jwtSigningKey: String
+  @Value($$"${application.token.signing.key}") private val jwtSigningKey: String
 ) {
 
   private val signingKey: SecretKey by lazy {

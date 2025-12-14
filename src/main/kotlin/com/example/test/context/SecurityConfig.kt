@@ -1,8 +1,8 @@
 package com.example.test.context
 
+import com.example.test.service.UserService
 import com.example.test.repository.SessionRepository
 import com.example.test.service.JwtService
-import com.example.test.service.UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus

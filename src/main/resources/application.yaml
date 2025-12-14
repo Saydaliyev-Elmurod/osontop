@@ -31,6 +31,10 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+application:
+  token:
+    signing:
+      key: 490FU768454B4B623265TMI9966A59893443767HBR7924A226452948404D6334
 info:
   app:
     name: ${spring.application.name}
