@@ -30,7 +30,9 @@ dependencies {
   implementation("io.jsonwebtoken:jjwt-api:0.12.5")
   runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
   runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
-
+//
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+  implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive:4.0.0")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
   implementation("org.springframework.boot:spring-boot-starter-liquibase")
   implementation("org.springframework.boot:spring-boot-starter-security")
