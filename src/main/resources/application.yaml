@@ -1,5 +1,5 @@
 server:
-  port: 8001
+  port: 8000
   forward-headers-strategy: framework
 
 spring:
@@ -9,6 +9,10 @@ spring:
   webflux:
     base-path: /
   data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:M1msoFt}
     r2dbc:
       repositories:
         enabled: true
@@ -24,6 +28,7 @@ spring:
     password: ${POSTGRES_PASSWORD:secret}
     change-log: classpath:db.migration/db.changelog-master.yaml
     enabled: true
+
 
 springdoc:
   api-docs:

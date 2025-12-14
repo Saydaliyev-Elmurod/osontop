@@ -1,20 +1,17 @@
 package com.example.test.context
 
-import com.example.test.service.UserService
+import com.example.test.exception.NotFoundException
 import com.example.test.repository.SessionRepository
 import com.example.test.service.JwtService
+import com.example.test.service.UserService
 import io.jsonwebtoken.Claims
+import io.jsonwebtoken.JwtException
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
-import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.util.*
-
-// TODO: UserPrincipal, CurrentUserAuthenticationToken, JwtAuthenticationException importlarini loyihadagi haqiqiy paketlarga o'zgartiring.
-
 
 class JwtConverter(
   private val jwtService: JwtService,
@@ -25,48 +22,40 @@ class JwtConverter(
   override fun convert(exchange: ServerWebExchange): Mono<Authentication> {
     return Mono.justOrEmpty(exchange.request.headers.getFirst(HttpHeaders.AUTHORIZATION))
       .filter { it.startsWith("Bearer ") }
-      .map { it.substring(7) } // "Bearer " qismini olib tashlash
+      .map { it.substring(7) }
       .flatMap(this::createAuthentication)
-      .onErrorResume { error ->
-        Mono.empty()
-      }
+      .onErrorResume { Mono.empty() }
   }
 
   private fun createAuthentication(token: String): Mono<Authentication> {
     return Mono.fromCallable { jwtService.getAllClaims(token) }
-      .onErrorMap { e -> JwtAuthenticationException("Invalid token: ${e.message}", HttpStatus.UNAUTHORIZED) }
       .flatMap { claims ->
         val userId = claims.getUUID("userId")
         val deviceId = claims.getUUID("deviceId")
         val sessionId = claims.getUUID("sessionId")
 
         sessionRepository.findByIdAndUserIdAndDeviceId(sessionId, userId, deviceId)
-          .switchIfEmpty(Mono.error(JwtAuthenticationException("Invalid session credentials", HttpStatus.UNAUTHORIZED)))
-      }
-      .flatMap { session ->
-        Mono.just(CurrentUserAuthenticationToken(session.userId.toString()))
+          .switchIfEmpty(Mono.error(JwtException("Session not found")))
+          .flatMap { session ->
+            userService.findById(session.userId)
+              .switchIfEmpty(Mono.error(NotFoundException("User not found")))
+              .map { userResponse ->
+                val principal = UserPrincipal(
+                  user = userResponse,
+                  deviceId = deviceId,
+                  sessionId = sessionId
+                )
+                CustomAuthenticationToken(principal)
+              }
+          }
       }
   }
-
 
   private fun Claims.getUUID(key: String): UUID {
     return try {
       UUID.fromString(this.get(key, String::class.java))
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       throw IllegalArgumentException("Invalid UUID in JWT claim: $key")
     }
-  }
-}
-
-class JwtAuthenticationException(message: String, val status: HttpStatus) : RuntimeException(message)
-
-class CurrentUserAuthenticationToken(private val principal: Any) : Authentication {
-  override fun getName(): String = principal.toString()
-  override fun getAuthorities(): Collection<GrantedAuthority> = emptyList()
-  override fun getCredentials(): Any? = null
-  override fun getDetails(): Any? = null
-  override fun getPrincipal(): Any = principal
-  override fun isAuthenticated(): Boolean = true
-  override fun setAuthenticated(isAuthenticated: Boolean) {
   }
 }

@@ -25,24 +25,12 @@ class SecurityConfig(
   private val sessionRepository: SessionRepository
 ) {
 
-  private val publicApiEndpoints = arrayOf(
-    "/api/users/v1/users/test",
-    "/api/users/v1/local/**",
-    "/api/users/v1/users/login",
-    "/api/users/v1/users/check",
-    "/api/users/v1/users/sign-up",
-    "/api/users/v1/users/sign-up/confirm",
-    "/api/users/v1/users/recovery",
-    "/api/users/v1/users/recovery/confirm",
-    "/api/users/v1/users/recovery/password",
-    "/api/users/v1/users/google/auth",
-    "/api/users/v1/driver/login/check",
-    "/api/users/v1/users/admin/login",
-    "/api/users/v1/users/forgot/**",
+  val publicApiEndpoints = arrayOf(
+    "/api/login/v1/**",
     // Swagger UI endpoints
     "/swagger-ui.html",
     "/swagger-ui/**",
-    "/api/users/v3/api-docs/**",
+    "/api/v3/api-docs/**",
     "/webjars/swagger-ui/**",
     "/v3/api-docs/**"
   )

@@ -6,25 +6,23 @@ import com.example.test.model.VerificationRequest
 import com.example.test.model.VerificationResponse
 import com.example.test.service.LoginService
 import org.springframework.web.bind.annotation.*
-import java.util.*
-import kotlin.math.log
+import reactor.core.publisher.Mono
 
 @RestController
-@RequestMapping("/api/logon/v1")
+@RequestMapping("/api/login/v1")
 class LoginController(private val loginService: LoginService) {
 
   @PostMapping("/code")
   fun sendCode(
-    @RequestBody request: PhoneRequest?
-  ): VerificationResponse {
+    @RequestBody request: PhoneRequest
+  ): Mono<VerificationResponse> {
     return loginService.sendCode(request)
   }
 
   @PostMapping("/verify")
   fun verifyCode(
     @RequestBody request: VerificationRequest
-  ): TokenResponse {
-    println(request)
-    return loginService.verifyCode(merchantId, request)
+  ): Mono<TokenResponse> {
+    return loginService.verifyCode(request)
   }
 }

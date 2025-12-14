@@ -15,6 +15,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.reactive.resource.NoResourceFoundException
 import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.ServerWebInputException
+import tools.jackson.module.kotlin.KotlinInvalidNullException
 import java.io.IOException
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -148,6 +150,18 @@ class GlobalExceptionHandler(private val messageSource: ResourceBundleMessageSou
     return constructExceptionResponse(e, request, HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND_ERROR_CODE)
   }
 
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(ServerWebInputException::class)
+  fun handleNullValueException(e: ServerWebInputException, request: ServerWebExchange): ResponseEntity<*> {
+    return constructExceptionResponse(e, request, HttpStatus.BAD_REQUEST, ErrorCode.REQUIRED_FIELD_MISSED)
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(KotlinInvalidNullException::class)
+  fun handleNullValueException(e: KotlinInvalidNullException, request: ServerWebExchange): ResponseEntity<*> {
+    return constructExceptionResponse(e, request, HttpStatus.BAD_REQUEST, ErrorCode.REQUIRED_FIELD_MISSED)
+  }
+
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(NoResourceFoundException::class)
   fun handleNotFoundException(e: NoResourceFoundException, request: ServerWebExchange): ResponseEntity<*> {
@@ -192,7 +206,7 @@ class GlobalExceptionHandler(private val messageSource: ResourceBundleMessageSou
       code = errorCode,
       status = "${status.value()} ${status.reasonPhrase}",
       path = path,
-      errorMessage = e.message,
+      errorMessage = exc.message,
       errorDescription = msg,
       timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
     )
