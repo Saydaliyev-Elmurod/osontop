@@ -6,8 +6,6 @@ import com.example.test.model.TokenResponse
 import com.example.test.model.VerificationRequest
 import com.example.test.model.VerificationResponse
 import com.example.test.repository.UserRepository
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.security.Keys
 import lombok.extern.log4j.Log4j2
 import org.apache.logging.log4j.LogManager
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate
@@ -16,7 +14,6 @@ import reactor.core.publisher.Mono
 import java.time.Duration
 import java.time.Instant
 import java.util.*
-import javax.crypto.SecretKey
 import kotlin.random.Random
 
 @Service
@@ -29,8 +26,6 @@ class LoginService(
   companion object {
     private val LOGGER = LogManager.getLogger()
     private const val CODE_PREFIX = "CODE:"
-    private val secretKey: SecretKey =
-      Keys.hmacShaKeyFor("your-very-secure-and-long-secret-key-that-is-at-least-256-bits".toByteArray())
   }
 
   private val buildType = "dev"
@@ -76,8 +71,7 @@ class LoginService(
                 .switchIfEmpty(
                   userRepository.save(
                     UserEntity(
-                      phone = request.phone,
-                      role = "USER"
+                      phone = request.phone
                     )
                   )
                 )

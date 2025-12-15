@@ -10,23 +10,19 @@ import java.util.UUID
 
 @Table(name = "users")
 data class UserEntity(
-
   @Id
   var id: UUID? = null,
-
-  var firstName: String,
-  var lastName: String,
+  var firstName: String? = "",
+  var lastName: String? = "",
   var phone: String,
-  var email: String,
-  var password: String,
-  var authProvider: String?,
-  var authId: String?,
-
+  var email: String? = "",
+  var password: String? = "",
+  var authProvider: String? = "",
   @CreatedDate
   var createdDate: Instant = Instant.now(),
   @LastModifiedDate
   var lastModifiedDate: Instant = Instant.now(),
   var deleted: Boolean = false,
   @Version
-  var version: Long? = null
+  var version: Long? = 0
 )
