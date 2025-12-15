@@ -26,36 +26,6 @@ class JwtService(
 
   fun getAllClaims(token: String): Claims = extractAllClaims(token)
 
-  fun generateTokenTemporary(userId: UUID, deviceId: UUID, sessionId: UUID, iss: String): String {
-    val extraClaims = mapOf(
-      "userId" to userId,
-      "deviceId" to deviceId,
-      "sessionId" to sessionId
-    )
-    return generateTemporaryToken(extraClaims, userId.toString(), iss)
-  }
-
-  fun generateTokenTemporary(userId: UUID, deviceId: UUID, sessionId: UUID, companyId: UUID, iss: String): String {
-    val extraClaims = mapOf(
-      "userId" to userId,
-      "deviceId" to deviceId,
-      "sessionId" to sessionId,
-      "companyId" to companyId
-    )
-    return generateTemporaryToken(extraClaims, userId.toString(), iss)
-  }
-
-  private fun generateTemporaryToken(extraClaims: Map<String, Any>, sub: String, iss: String): String {
-    return Jwts.builder()
-      .claims(extraClaims)
-      .subject(sub)
-      .issuer(iss)
-      .issuedAt(Date(System.currentTimeMillis()))
-      .expiration(Date(System.currentTimeMillis() + 1000 * 60 * 5)) // 5 daqiqa
-      .signWith(signingKey)
-      .compact()
-  }
-
   fun generateToken(userId: UUID, deviceId: UUID, sessionId: UUID, iss: String): String {
     val extraClaims = mapOf(
       "userId" to userId,
@@ -75,7 +45,7 @@ class JwtService(
     return claimsResolver(claims)
   }
 
-  fun generateToken(extraClaims: Map<String, Any>, sub: String, iss: String): String {
+  private fun generateToken(extraClaims: Map<String, Any>, sub: String, iss: String): String {
     return Jwts.builder()
       .claims(extraClaims)
       .subject(sub)
