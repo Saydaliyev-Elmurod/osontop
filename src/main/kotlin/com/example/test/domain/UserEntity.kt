@@ -18,6 +18,7 @@ data class UserEntity(
   var email: String? = "",
   var password: String? = "",
   var authProvider: String? = "",
+  var type: UserType = UserType.CLIENT,
   @CreatedDate
   var createdDate: Instant = Instant.now(),
   @LastModifiedDate
