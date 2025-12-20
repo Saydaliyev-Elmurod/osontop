@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="20241214-02-create-users-table" author="elmurod">
+        <sql>
+            CREATE TABLE users (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                first_name VARCHAR(255),
+                last_name VARCHAR(255),
+                phone VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                password VARCHAR(255),
+                auth_provider VARCHAR(50),
+                type VARCHAR(50) DEFAULT 'CLIENT',
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted BOOLEAN DEFAULT FALSE,
+                version BIGINT DEFAULT 0
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

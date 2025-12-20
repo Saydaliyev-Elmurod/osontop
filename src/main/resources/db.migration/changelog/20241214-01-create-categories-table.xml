@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="20241214-01-create-categories-table" author="elmurod">
+        <sql>
+            CREATE TABLE categories (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                name_uz VARCHAR(255),
+                name_ru VARCHAR(255),
+                name_en VARCHAR(255),
+                description_uz TEXT,
+                description_ru TEXT,
+                description_en TEXT,
+                image VARCHAR(255),
+                icon VARCHAR(255),
+                parent_id UUID,
+                order_index INT DEFAULT 0,
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted BOOLEAN DEFAULT FALSE,
+                version BIGINT DEFAULT 0,
+                CONSTRAINT fk_categories_parent_id FOREIGN KEY (parent_id) REFERENCES categories (id)
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

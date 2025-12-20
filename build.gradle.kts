@@ -1,6 +1,7 @@
 plugins {
   kotlin("jvm") version "2.2.21"
   kotlin("plugin.spring") version "2.2.21"
+  kotlin("kapt") version "2.2.21"
   id("org.springframework.boot") version "4.0.0"
   id("io.spring.dependency-management") version "1.1.7"
 }
@@ -42,6 +43,11 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("org.springframework:spring-jdbc")
   implementation("tools.jackson.module:jackson-module-kotlin")
+  
+  // MapStruct
+  implementation("org.mapstruct:mapstruct:1.6.3")
+//  kapt("org.mapstruct:mapstruct-processor:1.6.3")
+
   compileOnly("org.projectlombok:lombok")
   runtimeOnly("org.postgresql:postgresql")
   runtimeOnly("org.postgresql:r2dbc-postgresql")
