@@ -1,39 +1,25 @@
-
 version: '3.8'
 
 services:
-
-  postgres:
-    container_name: postgres-test
-    hostname: postgres
-    image: postgres:16.8
-    restart: always
-    environment:
-      POSTGRES_DB: test
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      PGPORT: 5433
-      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-      POSTGRES_MAX_CONNECTIONS: 200
-      POSTGRES_SHARED_BUFFERS: 512MB
-      POSTGRES_EFFECTIVE_CACHE_SIZE: 2GB
-      POSTGRES_MAINTENANCE_WORK_MEM: 256MB
-      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
-      POSTGRES_WAL_BUFFERS: 16MB
-      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
-      POSTGRES_RANDOM_PAGE_COST: 1.1
-      POSTGRES_EFFECTIVE_IO_CONCURRENCY: 200
-      POSTGRES_WORK_MEM: 16MB
-      POSTGRES_MIN_WAL_SIZE: 1GB
-      POSTGRES_MAX_WAL_SIZE: 4GB
-      POSTGRES_MAX_WORKERS: 8
-      POSTGRES_MAX_PARALLEL_WORKERS: 4
+  backend:
+    container_name: backend
+    image: ${DOCKERHUB_USERNAME}/${DOCKERHUB_API_REPO}:backend-latest
     ports:
-      - "5433:5433"
+      - "8080:8080"
+    environment:
+      POSTGRES_SERVER: $POSTGRES_SERVER
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: $REDIS_PASSWORD
+    restart: on-failure
+    networks:
+      - brons
     volumes:
-      - postgres_volume:/var/lib/postgresql/data/
-      - ./create_schemas.sh:/docker-entrypoint-initdb.d/create_schemas.sh
+      - /log:/opt/log
+      - /files:/files
 
-
-volumes:
-  postgres_volume:
+networks:
+  brons:
+    external: true

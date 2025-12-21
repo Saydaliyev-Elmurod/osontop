@@ -1,0 +1,109 @@
+name: backend
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    types:
+      - closed
+
+jobs:
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true))
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+
+      # ✅ Gradle cache (Maven o‘rniga)
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # ✅ Build Gradle project
+      - name: Build project with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build -x test
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Backend Docker image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest .
+
+      - name: Push Backend Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest
+
+      - name: Backend Build Summary
+        run: |
+          echo "## Backend Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Image:** ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest" >> $GITHUB_STEP_SUMMARY
+
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: [ self-hosted ]
+    needs: build-backend
+    if: success()
+
+    steps:
+      - name: Checkout source (for docker-compose.yml)
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull Backend Docker image
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest
+
+      - name: Stop backend service
+        run: docker compose -f docker-compose.yml stop backend || true
+
+      - name: Remove backend container
+        run: docker compose -f docker-compose.yml rm -f backend || true
+
+      - name: Clean up old backend images
+        run: |
+          docker image prune -f --filter "label=service=backend"
+
+      - name: Start backend service
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_API_REPO: ${{ secrets.DOCKERHUB_API_REPO }}
+          POSTGRES_SERVER: ${{ secrets.POSTGRES_SERVER }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        run: docker compose -f docker-compose.yml up -d backend
+
+      - name: Backend Deployment Summary
+        run: |
+          echo "## Backend Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Backend deployed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at:** $(date)" >> $GITHUB_STEP_SUMMARY
