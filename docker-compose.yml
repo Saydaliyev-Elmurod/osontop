@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     container_name: backend
-    image: ${DOCKERHUB_USERNAME}/${DOCKERHUB_API_REPO}:backend-latest
+    image: ${DOCKERHUB_USERNAME}/${DOCKERHUB_API_REPO}:latest
     ports:
       - "8080:8080"
     environment:
