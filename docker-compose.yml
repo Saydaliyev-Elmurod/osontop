@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   backend:
-    container_name: backend
+    container_name: osontop
     image: ${DOCKERHUB_USERNAME}/${DOCKERHUB_API_REPO}:latest
     ports:
-      - "8080:8080"
+      - "8100:8100"
     environment:
       POSTGRES_SERVER: $POSTGRES_SERVER
       POSTGRES_USER: $POSTGRES_USER
