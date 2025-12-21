@@ -79,7 +79,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Pull Backend Docker image
-        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:latest
 
       - name: Stop backend service
         run: docker compose -f docker-compose.yml stop backend || true
@@ -105,5 +105,5 @@ jobs:
         run: |
           echo "## Backend Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ✅ Backend deployed successfully" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployed at:** $(date)" >> $GITHUB_STEP_SUMMARY
