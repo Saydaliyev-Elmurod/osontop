@@ -18,12 +18,12 @@ spring:
         enabled: true
 
   r2dbc:
-    url: r2dbc:postgresql://${POSTGRES_SERVER:postgres:5433}/osontop
+    url: r2dbc:postgresql://${POSTGRES_SERVER:postgres:5433}/postgres
     username: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:secret}
 
   liquibase:
-    url: jdbc:postgresql://${POSTGRES_SERVER:postgres:5433}/osontop
+    url: jdbc:postgresql://${POSTGRES_SERVER:postgres:5433}/postgres
     user: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:secret}
     change-log: classpath:db.migration/db.changelog-master.yaml
