@@ -34,4 +34,5 @@ interface CategoryMapper {
     @Mapping(source = "descriptionRu", target = "description.ru")
     @Mapping(source = "descriptionEn", target = "description.en")
     fun toResponse(entity: CategoryEntity): CategoryResponse
+
 }

@@ -12,7 +12,7 @@ description = "Demo project for Spring Boot"
 
 java {
   toolchain {
-    languageVersion = JavaLanguageVersion.of(24)
+    languageVersion = JavaLanguageVersion.of(21)
   }
 }
 
@@ -46,7 +46,7 @@ dependencies {
   
   // MapStruct
   implementation("org.mapstruct:mapstruct:1.6.3")
-//  kapt("org.mapstruct:mapstruct-processor:1.6.3")
+  kapt("org.mapstruct:mapstruct-processor:1.6.3")
 
   compileOnly("org.projectlombok:lombok")
   runtimeOnly("org.postgresql:postgresql")

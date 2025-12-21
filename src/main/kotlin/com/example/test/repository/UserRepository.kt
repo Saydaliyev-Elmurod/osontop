@@ -11,10 +11,6 @@ import java.util.UUID
 @Repository
 interface UserRepository : R2dbcRepository<UserEntity, UUID> {
 
-    fun findByIdAndDeletedIsFalse(id: UUID): Mono<UserEntity>
-
-    fun findByAuthIdAndDeletedFalse(authId: String): Mono<UserEntity>
-
     fun findByPhoneAndDeletedFalse(phone: String): Mono<UserEntity>
 
     fun findByEmailAndDeletedFalse(email: String): Mono<UserEntity>

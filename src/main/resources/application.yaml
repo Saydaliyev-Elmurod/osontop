@@ -10,20 +10,20 @@ spring:
     base-path: /
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:M1msoFt}
+      password: ${REDIS_PASSWORD:secret}
     r2dbc:
       repositories:
         enabled: true
 
   r2dbc:
-    url: r2dbc:postgresql://${POSTGRES_SERVER:localhost:5433}/test
+    url: r2dbc:postgresql://${POSTGRES_SERVER:postgres:5433}/osontop
     username: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:secret}
 
   liquibase:
-    url: jdbc:postgresql://${POSTGRES_SERVER:localhost:5433}/test
+    url: jdbc:postgresql://${POSTGRES_SERVER:postgres:5433}/osontop
     user: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:secret}
     change-log: classpath:db.migration/db.changelog-master.yaml
