@@ -48,18 +48,18 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Backend Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest .
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:latest .
 
       - name: Push Backend Docker image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:latest
 
       - name: Backend Build Summary
         run: |
           echo "## Backend Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend Image:** ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:osontop-latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Image:** ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_API_REPO }}:latest" >> $GITHUB_STEP_SUMMARY
 
 
   deploy-backend:
