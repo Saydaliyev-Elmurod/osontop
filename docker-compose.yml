@@ -15,11 +15,11 @@ services:
       REDIS_PASSWORD: $REDIS_PASSWORD
     restart: on-failure
     networks:
-      - brons
+      - osontop
     volumes:
       - /log:/opt/log
       - /files:/files
 
 networks:
-  brons:
+  osontop:
     external: true
