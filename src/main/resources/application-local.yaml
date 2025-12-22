@@ -1,0 +1,25 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: secret
+    r2dbc:
+      repositories:
+        enabled: true
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5433/postgres
+    username: postgres
+    password: secret
+    properties:
+      schema: osontop
+
+  liquibase:
+    url: jdbc:postgresql://localhost:5433/postgres
+    user: postgres
+    password: secret
+    change-log: classpath:db.migration/db.changelog-master.yaml
+    enabled: true
+    liquibase-schema: osontop
+
