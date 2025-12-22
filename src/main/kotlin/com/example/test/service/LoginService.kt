@@ -1,10 +1,15 @@
 package com.example.test.service
 
+import com.example.test.domain.DeviceEntity
+import com.example.test.domain.SessionEntity
 import com.example.test.domain.UserEntity
 import com.example.test.domain.UserType
 import com.example.test.exception.BadRequestException
 import com.example.test.exception.handler.ErrorCode
+import com.example.test.mapper.DeviceMapper
 import com.example.test.model.*
+import com.example.test.repository.DeviceRepository
+import com.example.test.repository.SessionRepository
 import com.example.test.repository.UserRepository
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
@@ -26,7 +31,10 @@ import kotlin.random.Random
 class LoginService(
   private val redisTemplate: ReactiveStringRedisTemplate,
   private val userRepository: UserRepository,
-  private val passwordEncoder: PasswordEncoder
+  private val passwordEncoder: PasswordEncoder,
+  private val deviceRepository: DeviceRepository,
+  private val sessionRepository: SessionRepository,
+  private val deviceMapper: DeviceMapper
 ) {
   companion object {
     private val LOGGER = LogManager.getLogger()
@@ -71,7 +79,21 @@ class LoginService(
                   )
                 )
                 .flatMap { user ->
-                  generateTokens(user, request)
+                  toggleDevice(request)
+                    .flatMap { device ->
+                      sessionRepository.deleteByDeviceId(device.id!!)
+                        .then(Mono.just(device))
+                    }
+                    .flatMap { device ->
+                      val session = SessionEntity(
+                        userId = user.id!!,
+                        deviceId = device.id!!
+                      )
+                      sessionRepository.save(session)
+                    }
+                    .flatMap { session ->
+                      generateTokens(user, session)
+                    }
                 }
             )
         } else {
@@ -87,7 +109,8 @@ class LoginService(
       .switchIfEmpty(Mono.error(RuntimeException("Admin not found")))
       .flatMap { user ->
         if (passwordEncoder.matches(request.password, user.password)) {
-          generateTokens(user, request)
+          // TODO: Implement device/session for admin
+          generateTokens(user, null)
         } else {
           Mono.error(RuntimeException("Invalid password"))
         }
@@ -115,7 +138,10 @@ class LoginService(
                 )
               )
             )
-            .flatMap { user -> generateTokens(user, request) }
+            .flatMap { user ->
+              // TODO: Implement device/session for Google login
+              generateTokens(user, null)
+            }
         } else {
           Mono.error(RuntimeException("Invalid Google Token"))
         }
@@ -125,22 +151,34 @@ class LoginService(
       }
   }
 
-  private fun generateTokens(user: UserEntity, request: VerificationRequest): Mono<TokenResponse> {
+  private fun toggleDevice(request: VerificationRequest): Mono<DeviceEntity> {
+    LOGGER.debug("Toggle Device By UUID: {}", request.deviceId)
+    return deviceRepository
+      .findByDeviceIdAndDeletedIsFalse(request.deviceId)
+      .map { device -> deviceMapper.toDeviceEntity(device.id, request) }
+      .switchIfEmpty(Mono.just(deviceMapper.toDeviceEntity(request)))
+      .flatMap { device -> deviceRepository.save(device) }
+  }
+
+  private fun generateTokens(user: UserEntity, session: SessionEntity?): Mono<TokenResponse> {
     return Mono.fromCallable {
       val now = Date()
       val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L
 
-      deviceS
-      val accessToken = Jwts.builder()
+      val builder = Jwts.builder()
         .subject(user.id.toString())
         .claim("phone", user.phone)
         .claim("role", user.type.name)
         .issuedAt(now)
         .expiration(Date(now.time + validity))
         .signWith(secretKey)
-        .compact()
 
-      TokenResponse(accessToken)
+      if (session != null) {
+        builder.claim("sessionId", session.id.toString())
+        builder.claim("deviceId", session.deviceId.toString())
+      }
+
+      TokenResponse(builder.compact())
     }
   }
 }

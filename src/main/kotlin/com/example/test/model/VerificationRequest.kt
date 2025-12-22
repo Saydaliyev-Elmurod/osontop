@@ -8,10 +8,10 @@ data class VerificationRequest(
   val phone: String,
   val code: Int,
   val deviceId: String,
-  val os: String, // android
-  val osVersion: String, // 24
-  val brand: String,//Samsung
-  val model: String, //SM-S918B
+  val os: String? = null, // android
+  val osVersion: String? = null, // 24
+  val brand: String? = null,//Samsung
+  val model: String? = null, //SM-S918B
   val deviceType: DeviceType,
   val fcmToken: String? = null
 )

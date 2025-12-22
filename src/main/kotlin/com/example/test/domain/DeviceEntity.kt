@@ -9,16 +9,14 @@ import java.util.UUID
 
 @Table(name = "devices")
 data class DeviceEntity(
-
   @Id
   var id: UUID? = null,
-  var uuid: String,
+  var deviceId: String,
   var osVersion: String,
   var os: String,
   var model: String,
   var brand: String,
-  var type: String,
-  var device: String,
+  var deviceType: DeviceType,
   var fcmToken: String?,
   @CreatedDate
   var createdDate: Instant = Instant.now(),
