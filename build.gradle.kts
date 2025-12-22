@@ -43,7 +43,8 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("org.springframework:spring-jdbc")
   implementation("tools.jackson.module:jackson-module-kotlin")
-  
+
+  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.0")
   // MapStruct
   implementation("org.mapstruct:mapstruct:1.6.3")
   kapt("org.mapstruct:mapstruct-processor:1.6.3")
