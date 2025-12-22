@@ -2,6 +2,8 @@ package com.example.test.service
 
 import com.example.test.domain.UserEntity
 import com.example.test.domain.UserType
+import com.example.test.exception.BadRequestException
+import com.example.test.exception.handler.ErrorCode
 import com.example.test.model.*
 import com.example.test.repository.UserRepository
 import io.jsonwebtoken.Jwts
@@ -37,11 +39,11 @@ class LoginService(
   private val webClient = WebClient.create()
 
   fun sendCode(request: PhoneRequest): Mono<VerificationResponse> {
-    val code = if (buildType == "dev") 1234 else Random.nextInt(1000, 9999)
+    val code = if (buildType == "dev") 12345 else Random.nextInt(10000, 99999)
     val id = UUID.randomUUID()
 
     return redisTemplate.opsForValue()
-      .set(CODE_PREFIX + request.phone, code.toString(), Duration.ofMinutes(5))
+      .set(CODE_PREFIX + request.phone, code.toString(), Duration.ofMinutes(3))
       .doOnSuccess { LOGGER.info("Generated code for ${request.phone} is $code") }
       .map {
         VerificationResponse(
@@ -69,14 +71,14 @@ class LoginService(
                   )
                 )
                 .flatMap { user ->
-                  generateTokens(user)
+                  generateTokens(user, request)
                 }
             )
         } else {
-          Mono.error(RuntimeException("Code is not valid"))
+          Mono.error(BadRequestException(ErrorCode.CODE_INCORRECT, "Code is not valid"))
         }
       }
-      .switchIfEmpty(Mono.error(RuntimeException("Code not found or expired")))
+      .switchIfEmpty(Mono.error(BadRequestException(ErrorCode.TIME_EXPIRED, "Code not found or expired")))
   }
 
   fun loginAdmin(request: AdminLoginRequest): Mono<TokenResponse> {
@@ -85,7 +87,7 @@ class LoginService(
       .switchIfEmpty(Mono.error(RuntimeException("Admin not found")))
       .flatMap { user ->
         if (passwordEncoder.matches(request.password, user.password)) {
-          generateTokens(user)
+          generateTokens(user, request)
         } else {
           Mono.error(RuntimeException("Invalid password"))
         }
@@ -93,26 +95,17 @@ class LoginService(
   }
 
   fun loginWithGoogle(request: GoogleLoginRequest): Mono<TokenResponse> {
-    // Verify token with Google
     return webClient.get()
       .uri("https://oauth2.googleapis.com/tokeninfo?id_token=${request.token}")
       .retrieve()
       .bodyToMono(Map::class.java)
       .flatMap { response ->
         val email = response["email"] as? String
-        val emailVerified = response["email_verified"] as? String // Google returns string "true"
+        val emailVerified = response["email_verified"] as? String
 
         if (email != null && emailVerified == "true") {
           userRepository.findByEmailAndDeletedFalse(email)
             .switchIfEmpty(
-              // Create new user if not exists. Note: Phone is mandatory in UserEntity,
-              // but for Google login we might not have it.
-              // Assuming we can use email as phone or handle it differently.
-              // For now, I'll use email as phone placeholder or we need to change UserEntity to make phone nullable.
-              // But the requirement said "phone boyicha unique".
-              // I will assume for now we might need to ask for phone later or use a dummy.
-              // Let's use email as phone for now to satisfy the constraint or create a user with empty phone if allowed?
-              // UserEntity has `var phone: String`.
               userRepository.save(
                 UserEntity(
                   phone = email, // Temporary mapping
@@ -122,7 +115,7 @@ class LoginService(
                 )
               )
             )
-            .flatMap { user -> generateTokens(user) }
+            .flatMap { user -> generateTokens(user, request) }
         } else {
           Mono.error(RuntimeException("Invalid Google Token"))
         }
@@ -132,11 +125,12 @@ class LoginService(
       }
   }
 
-  private fun generateTokens(user: UserEntity): Mono<TokenResponse> {
+  private fun generateTokens(user: UserEntity, request: VerificationRequest): Mono<TokenResponse> {
     return Mono.fromCallable {
       val now = Date()
-      val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L // 1 day vs 6 months (approx)
+      val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L
 
+      deviceS
       val accessToken = Jwts.builder()
         .subject(user.id.toString())
         .claim("phone", user.phone)
@@ -146,17 +140,7 @@ class LoginService(
         .signWith(secretKey)
         .compact()
 
-      val refreshToken = Jwts.builder()
-        .subject(user.id.toString())
-        .issuedAt(now)
-        .expiration(Date(now.time + validity * 2)) // Refresh token longer? Or same as requirement?
-        // Requirement: "adminga 1 kun userga 6 oyga token generatsiya qilib beradi."
-        // Usually refresh token is longer, but let's stick to the validity for access token or make refresh token same/longer.
-        // I'll make refresh token same duration for simplicity based on prompt, or slightly longer.
-        .signWith(secretKey)
-        .compact()
-
-      TokenResponse(accessToken, refreshToken)
+      TokenResponse(accessToken)
     }
   }
 }

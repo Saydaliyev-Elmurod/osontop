@@ -1,5 +1,6 @@
 package com.example.test.domain
 
+import com.example.test.util.Constant
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.LastModifiedDate
@@ -8,13 +9,13 @@ import org.springframework.data.relational.core.mapping.Table
 import java.time.Instant
 import java.util.UUID
 
-@Table(name = "users")
+@Table(name = Constant.USER_TABLE)
 data class UserEntity(
   @Id
   var id: UUID? = null,
   var firstName: String? = "",
   var lastName: String? = "",
-  var phone: String,
+  var phone: String? = null,
   var email: String? = "",
   var password: String? = "",
   var authProvider: String? = "",
@@ -23,7 +24,5 @@ data class UserEntity(
   var createdDate: Instant = Instant.now(),
   @LastModifiedDate
   var lastModifiedDate: Instant = Instant.now(),
-  var deleted: Boolean = false,
-  @Version
-  var version: Long? = 0
+  var deleted: Boolean = false
 )
