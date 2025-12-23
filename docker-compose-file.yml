@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # SeaweedFS - Asosiy fayl ombori (S3 + Filer)
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs_server
+    restart: always
+    # "server" rejimi - Master, Volume, Filer va S3 ni bitta jarayonda yoqadi (RAM tejash uchun)
+    # -s3: S3 API ni yoqish
+    # -filer: Fayl tizimini yoqish
+    # -dir: Ma'lumotlarni qayerga saqlash
+    command: "server -s3 -s3.port=8333 -filer -filer.port=8888 -dir=/data -master.volumeSizeLimitMB=1024"
+    ports:
+      - "8333:8333" # S3 API (Spring Boot shu yerga ulanadi)
+      - "8888:8888" # Filer (Brauzerda ko'rish uchun)
+      - "9333:9333" # Master (Boshqaruv porti)
+    volumes:
+      - ./seaweedfs_data:/data # Fayllar serveringizda saqlanib qolishi uchun
+    deploy:
+      resources:
+        limits:
+          memory: 1024M # SeaweedFS ga 1GB dan ortiq RAM bermaymiz (Server qotib qolmasligi uchun)
+    networks:
+      - app-network
+
+  # (Ixtiyoriy) S3 ni tekshirish uchun CLI tool (kerak bo'lsa yoqing)
+  # minio-mc:
+  #   image: minio/mc
+  #   networks:
+  #     - app-network
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     sleep 5;
+  #     mc alias set seaweedfs http://seaweedfs:8333 any any;
+  #     tail -f /dev/null"
+
+networks:
+  app-network:
+    driver: bridge

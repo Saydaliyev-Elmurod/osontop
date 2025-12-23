@@ -18,6 +18,28 @@ springdoc:
     path: /swagger-ui.html
 
 application:
+  s3:
+    # Dockerda: http://seaweedfs:8333, Localda: http://localhost:8333
+    # ${ENV_VAR:default_value} strukturasi ishlatilgan
+    endpoint: ${APPLICATION_S3_ENDPOINT:http://localhost:8333}
+
+    # SeaweedFS da bu kalitlar shunchaki bo'sh bo'lmasligi kerak
+    access-key: ${APPLICATION_S3_ACCESS_KEY:any}
+    secret-key: ${APPLICATION_S3_SECRET_KEY:any}
+
+    # Fayllar saqlanadigan "Paqir" nomi
+    bucket: ${APPLICATION_S3_BUCKET:videos}
+
+    # Region (SeaweedFS uchun ahamiyatsiz, lekin SDK talab qiladi)
+    region: us-east-1
+
+  video:
+    # Vaqtincha fayllar saqlanadigan joy.
+    # Docker ichida "/app/temp", localda esa "./temp" bo'ladi
+    temp-dir: ${APPLICATION_VIDEO_TEMP_DIR:/app/temp}
+
+    # FFmpeg yo'li. Dockerda shunchaki "ffmpeg" (PATH da bor)
+    ffmpeg-path: ffmpeg
   token:
     signing:
       key: 490FU768454B4B623265TMI9966A59893443767HBR7924A226452948404D6334
@@ -26,4 +48,7 @@ info:
     name: ${spring.application.name}
     version: "@application.version@"
     description: "@application.description@"
+
+
+
 
