@@ -15,12 +15,12 @@ class FileController(
   private val imageService: ImageService
 ) {
 
-  @PostMapping
+  @PostMapping("/image")
   suspend fun video(@RequestPart("file") filePart: FilePart): String {
     return videoService.uploadVideo(filePart)
   }
 
-  @PostMapping
+  @PostMapping("/video")
   suspend fun image(@RequestPart("file") filePart: FilePart): List<String> {
     return imageService.uploadImage(filePart)
   }
