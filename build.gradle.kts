@@ -49,6 +49,14 @@ dependencies {
   implementation("org.mapstruct:mapstruct:1.6.3")
   kapt("org.mapstruct:mapstruct-processor:1.6.3")
 
+  // AWS S3
+  implementation(platform("software.amazon.awssdk:bom:2.25.11"))
+  implementation("software.amazon.awssdk:s3")
+
+  // Image Processing
+  implementation("net.coobird:thumbnailator:0.4.20")
+  implementation("com.twelvemonkeys.imageio:imageio-webp:3.10.1")
+
   compileOnly("org.projectlombok:lombok")
   runtimeOnly("org.postgresql:postgresql")
   runtimeOnly("org.postgresql:r2dbc-postgresql")
