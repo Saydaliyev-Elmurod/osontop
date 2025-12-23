@@ -57,6 +57,9 @@ dependencies {
   implementation("net.coobird:thumbnailator:0.4.20")
   implementation("com.twelvemonkeys.imageio:imageio-webp:3.10.1")
 
+  // FFmpeg wrapper (optional, but good for probing)
+  implementation("net.bramp.ffmpeg:ffmpeg:0.8.0")
+
   compileOnly("org.projectlombok:lombok")
   runtimeOnly("org.postgresql:postgresql")
   runtimeOnly("org.postgresql:r2dbc-postgresql")
