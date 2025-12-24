@@ -1,5 +1,6 @@
 package com.example.test.service
 
+import com.example.test.model.VideoUploadResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
@@ -29,7 +30,7 @@ class VideoService(
     private val logger = LoggerFactory.getLogger(VideoService::class.java)
 
 
-    suspend fun uploadVideo(filePart: FilePart): String = coroutineScope {
+    suspend fun uploadVideo(filePart: FilePart): VideoUploadResult = coroutineScope {
         val uuid = UUID.randomUUID().toString()
         val workDir = Path.of(tempDirBase, uuid)
 
@@ -44,17 +45,26 @@ class VideoService(
             // FilePart.transferTo() eng optimal usul, chunki u to'g'ridan-to'g'ri diskka yozadi (Zero-copy)
             filePart.transferTo(inputFile).awaitSingle()
 
-            // 3. Transcoding (FFmpeg)
-            logger.info("Starting transcoding for $uuid")
-            transcodeToHls(inputFile, workDir)
-            logger.info("Transcoding finished for $uuid")
+            // 3. Thumbnail va HLS jarayonlari (Parallel)
+            logger.info("Starting processing for $uuid")
+
+            val thumbnailJob = async { generateThumbnail(inputFile, workDir) }
+            val hlsJob = async { transcodeToHls(inputFile, workDir) }
+
+            thumbnailJob.await()
+            hlsJob.await()
+
+            logger.info("Processing finished for $uuid")
 
             // 4. Fayllarni S3 ga parallel yuklash
             logger.info("Starting upload for $uuid")
-            uploadHlsFiles(workDir, uuid)
+            uploadFiles(workDir, uuid)
             logger.info("Upload finished for $uuid")
 
-            return@coroutineScope uuid
+            return@coroutineScope VideoUploadResult(
+                hlsUrl = "videos/$uuid/master.m3u8",
+                posterUrl = "videos/$uuid/poster.webp"
+            )
 
         } catch (e: Exception) {
             logger.error("Error processing video $uuid", e)
@@ -65,6 +75,30 @@ class VideoService(
                 cleanup(workDir)
             }
         }
+    }
+
+    private suspend fun generateThumbnail(inputFile: Path, workDir: Path) = withContext(Dispatchers.IO) {
+        val posterFile = workDir.resolve("poster.webp").absolutePathString()
+
+        // FFmpeg command for thumbnail
+        // -ss 00:00:01 : Seek to 1 second
+        // -vframes 1 : Output 1 frame
+        // -vf scale=720:-1 : Resize width to 720px, keep aspect ratio
+        // -q:v 50 : Quality (for webp, 0-100, higher is better, but ffmpeg mapping might vary, usually for jpeg/webp qscale is used)
+        // For webp in ffmpeg, -q:v maps to quality.
+
+        val command = listOf(
+            "ffmpeg",
+            "-i", inputFile.absolutePathString(),
+            "-ss", "00:00:01",
+            "-vframes", "1",
+            "-vf", "scale=720:-1",
+            "-c:v", "libwebp",
+            "-q:v", "50",
+            posterFile
+        )
+
+        runProcess(command, workDir)
     }
 
     private suspend fun transcodeToHls(inputFile: Path, workDir: Path) = withContext(Dispatchers.IO) {
@@ -83,6 +117,10 @@ class VideoService(
             masterPlaylist
         )
 
+        runProcess(command, workDir)
+    }
+
+    private fun runProcess(command: List<String>, workDir: Path) {
         val processBuilder = ProcessBuilder(command)
         processBuilder.directory(workDir.toFile())
         processBuilder.redirectErrorStream(true) // stderr ni stdout ga yo'naltirish
@@ -98,17 +136,17 @@ class VideoService(
 
         val exitCode = process.waitFor()
         if (exitCode != 0) {
-            throw RuntimeException("FFmpeg transcoding failed with exit code $exitCode")
+            throw RuntimeException("FFmpeg process failed with exit code $exitCode. Command: $command")
         }
     }
 
-    private suspend fun uploadHlsFiles(workDir: Path, uuid: String) = coroutineScope {
-        // Papkadagi barcha .m3u8 va .ts fayllarni topish
+    private suspend fun uploadFiles(workDir: Path, uuid: String) = coroutineScope {
+        // Papkadagi barcha kerakli fayllarni topish (.m3u8, .ts, .webp)
         val filesToUpload = withContext(Dispatchers.IO) {
             Files.list(workDir).use { stream ->
                 stream.filter { path ->
                     val name = path.fileName.toString()
-                    name.endsWith(".m3u8") || name.endsWith(".ts")
+                    name.endsWith(".m3u8") || name.endsWith(".ts") || name.endsWith(".webp")
                 }.toList()
             }
         }
@@ -125,7 +163,11 @@ class VideoService(
     }
 
     private fun uploadFileToS3(file: Path, key: String) {
-        val contentType = if (file.toString().endsWith(".m3u8")) "application/x-mpegURL" else "video/MP2T"
+        val contentType = when {
+            file.toString().endsWith(".m3u8") -> "application/x-mpegURL"
+            file.toString().endsWith(".webp") -> "image/webp"
+            else -> "video/MP2T"
+        }
 
         val putObjectRequest = PutObjectRequest.builder()
             .bucket(bucketName)
