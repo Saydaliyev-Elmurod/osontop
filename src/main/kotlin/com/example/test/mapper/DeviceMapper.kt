@@ -15,6 +15,7 @@ interface DeviceMapper {
       Mappers.getMapper(DeviceMapper::class.java)
   }
 
+  @Mapping(target = "id", ignore = true)
   fun toDeviceEntity(request: VerificationRequest): DeviceEntity
 
   @Mapping(target = "id", source = "id")

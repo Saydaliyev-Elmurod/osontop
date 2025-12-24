@@ -49,26 +49,39 @@ class LoginService(
   private val webClient = WebClient.create()
 
   fun sendCode(request: PhoneRequest): Mono<VerificationResponse> {
-    val code = if (buildType == "dev") 12345 else Random.nextInt(10000, 99999)
-    val id = UUID.randomUUID()
+    val key = CODE_PREFIX + request.phone
 
     return redisTemplate.opsForValue()
-      .get(CODE_PREFIX + request.phone)
-      .cast(VerificationResponse::class.java)
+      .get(key)
+      .cast(SmsCache::class.java)
+      .map { sms ->
+        VerificationResponse(
+          phone = request.phone,
+          id = sms.id,
+          time = 180,
+          timestamp = sms.timestamp
+        )
+      }
       .switchIfEmpty(
         Mono.defer {
+          val code = if (buildType == "dev") 12345 else Random.nextInt(10000, 99999)
+          val id = UUID.randomUUID()
+
           val response = VerificationResponse(
             phone = request.phone,
             id = id,
             time = 180,
             timestamp = Instant.now()
           )
-
-          val cache =
-            SmsCache(phone = request.phone, id = id, time = response.time, timestamp = response.timestamp, code = code)
-
+          val cache = SmsCache(
+            phone = request.phone,
+            id = id,
+            time = response.time,     // 180 sekund
+            timestamp = response.timestamp, // Hozirgi vaqt
+            code = code
+          )
           redisTemplate.opsForValue()
-            .set(CODE_PREFIX + request.phone, cache, Duration.ofMinutes(3))
+            .set(key, cache, Duration.ofMinutes(3))
             .doOnSuccess { LOGGER.info("Generated code for ${request.phone} is $code") }
             .thenReturn(response)
         }
@@ -79,7 +92,7 @@ class LoginService(
   fun verifyCode(request: VerificationRequest): Mono<TokenResponse> {
     return redisTemplate.opsForValue().get(CODE_PREFIX + request.phone)
       .flatMap { codeFromRedis ->
-        if (codeFromRedis.phone == request.code.toString()) {
+        if (codeFromRedis.code == request.code) {
           redisTemplate.opsForValue().delete(CODE_PREFIX + request.phone)
             .then(
               userRepository.findByPhoneAndDeletedFalse(request.phone)
@@ -168,8 +181,8 @@ class LoginService(
     LOGGER.debug("Toggle Device By UUID: {}", request.deviceId)
     return deviceRepository
       .findByDeviceIdAndDeletedIsFalse(request.deviceId)
-      .map { device -> deviceMapper.toDeviceEntity(device.id, request) }
       .switchIfEmpty(Mono.just(deviceMapper.toDeviceEntity(request)))
+      .map { device -> deviceMapper.toDeviceEntity(device.id, request) }
       .flatMap { device -> deviceRepository.save(device) }
   }
 
@@ -180,7 +193,7 @@ class LoginService(
 
       val builder = Jwts.builder()
         .subject(user.id.toString())
-        .claim("phone", user.phone)
+        .claim("userId", user.id)
         .claim("role", user.type.name)
         .issuedAt(now)
         .expiration(Date(now.time + validity))
