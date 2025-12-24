@@ -31,7 +31,7 @@ import kotlin.random.Random
 @Service
 @Log4j2
 class LoginService(
-  private val redisTemplate: ReactiveRedisTemplate<String, VerificationResponse>,
+  private val redisTemplate: ReactiveRedisTemplate<String, SmsCache>,
   private val userRepository: UserRepository,
   private val passwordEncoder: PasswordEncoder,
   private val deviceRepository: DeviceRepository,
@@ -52,143 +52,146 @@ class LoginService(
     val code = if (buildType == "dev") 12345 else Random.nextInt(10000, 99999)
     val id = UUID.randomUUID()
 
-      return redisTemplate.opsForValue()
-        .get(CODE_PREFIX + request.phone)
-        .cast(VerificationResponse::class.java)
-        .switchIfEmpty(
-          Mono.defer {
-            val response = VerificationResponse(
-              phone = request.phone,
-              id = id,
-              time = 180,
-              timestamp = Instant.now()
-            )
+    return redisTemplate.opsForValue()
+      .get(CODE_PREFIX + request.phone)
+      .cast(VerificationResponse::class.java)
+      .switchIfEmpty(
+        Mono.defer {
+          val response = VerificationResponse(
+            phone = request.phone,
+            id = id,
+            time = 180,
+            timestamp = Instant.now()
+          )
 
-            redisTemplate.opsForValue()
-              .set(CODE_PREFIX + request.phone,response, Duration.ofMinutes(3))
-              .doOnSuccess { LOGGER.info("Generated code for ${request.phone} is $code") }
-              .thenReturn(response)
-          }
-        )
-    }
+          val cache =
+            SmsCache(phone = request.phone, id = id, time = response.time, timestamp = response.timestamp, code = code)
 
-    @Transactional
-    fun verifyCode(request: VerificationRequest): Mono<TokenResponse> {
-      return redisTemplate.opsForValue().get(CODE_PREFIX + request.phone)
-        .flatMap { codeFromRedis ->
-          if (codeFromRedis.code == request.code.toString()) {
-            redisTemplate.opsForValue().delete(CODE_PREFIX + request.phone)
-              .then(
-                userRepository.findByPhoneAndDeletedFalse(request.phone)
-                  .switchIfEmpty(
-                    userRepository.save(
-                      UserEntity(
-                        phone = request.phone,
-                        type = UserType.CLIENT
-                      )
+          redisTemplate.opsForValue()
+            .set(CODE_PREFIX + request.phone, cache, Duration.ofMinutes(3))
+            .doOnSuccess { LOGGER.info("Generated code for ${request.phone} is $code") }
+            .thenReturn(response)
+        }
+      )
+  }
+
+  @Transactional
+  fun verifyCode(request: VerificationRequest): Mono<TokenResponse> {
+    return redisTemplate.opsForValue().get(CODE_PREFIX + request.phone)
+      .flatMap { codeFromRedis ->
+        if (codeFromRedis.phone == request.code.toString()) {
+          redisTemplate.opsForValue().delete(CODE_PREFIX + request.phone)
+            .then(
+              userRepository.findByPhoneAndDeletedFalse(request.phone)
+                .switchIfEmpty(
+                  userRepository.save(
+                    UserEntity(
+                      phone = request.phone,
+                      type = UserType.CLIENT
                     )
                   )
-                  .flatMap { user ->
-                    toggleDevice(request)
-                      .flatMap { device ->
-                        sessionRepository.deleteByDeviceId(device.id!!)
-                          .then(Mono.just(device))
-                      }
-                      .flatMap { device ->
-                        val session = SessionEntity(
-                          userId = user.id!!,
-                          deviceId = device.id!!
-                        )
-                        sessionRepository.save(session)
-                      }
-                      .flatMap { session ->
-                        generateTokens(user, session)
-                      }
-                  }
-              )
-          } else {
-            Mono.error(BadRequestException(ErrorCode.CODE_INCORRECT, "Code is not valid"))
-          }
+                )
+                .flatMap { user ->
+                  toggleDevice(request)
+                    .flatMap { device ->
+                      sessionRepository.deleteByDeviceId(device.id!!)
+                        .then(Mono.just(device))
+                    }
+                    .flatMap { device ->
+                      val session = SessionEntity(
+                        userId = user.id!!,
+                        deviceId = device.id!!
+                      )
+                      sessionRepository.save(session)
+                    }
+                    .flatMap { session ->
+                      generateTokens(user, session)
+                    }
+                }
+            )
+        } else {
+          Mono.error(BadRequestException(ErrorCode.CODE_INCORRECT, "Code is not valid"))
         }
-        .switchIfEmpty(Mono.error(BadRequestException(ErrorCode.TIME_EXPIRED, "Code not found or expired")))
-    }
+      }
+      .switchIfEmpty(Mono.error(BadRequestException(ErrorCode.TIME_EXPIRED, "Code not found or expired")))
+  }
 
-    fun loginAdmin(request: AdminLoginRequest): Mono<TokenResponse> {
-      return userRepository.findByPhoneAndDeletedFalse(request.phone)
-        .filter { it.type == UserType.ADMIN }
-        .switchIfEmpty(Mono.error(RuntimeException("Admin not found")))
-        .flatMap { user ->
-          if (passwordEncoder.matches(request.password, user.password)) {
-            // TODO: Implement device/session for admin
-            generateTokens(user, null)
-          } else {
-            Mono.error(RuntimeException("Invalid password"))
-          }
+  fun loginAdmin(request: AdminLoginRequest): Mono<TokenResponse> {
+    return userRepository.findByPhoneAndDeletedFalse(request.phone)
+      .filter { it.type == UserType.ADMIN }
+      .switchIfEmpty(Mono.error(RuntimeException("Admin not found")))
+      .flatMap { user ->
+        if (passwordEncoder.matches(request.password, user.password)) {
+          // TODO: Implement device/session for admin
+          generateTokens(user, null)
+        } else {
+          Mono.error(RuntimeException("Invalid password"))
         }
-    }
+      }
+  }
 
-    fun loginWithGoogle(request: GoogleLoginRequest): Mono<TokenResponse> {
-      return webClient.get()
-        .uri("https://oauth2.googleapis.com/tokeninfo?id_token=${request.token}")
-        .retrieve()
-        .bodyToMono(Map::class.java)
-        .flatMap { response ->
-          val email = response["email"] as? String
-          val emailVerified = response["email_verified"] as? String
+  fun loginWithGoogle(request: GoogleLoginRequest): Mono<TokenResponse> {
+    return webClient.get()
+      .uri("https://oauth2.googleapis.com/tokeninfo?id_token=${request.token}")
+      .retrieve()
+      .bodyToMono(Map::class.java)
+      .flatMap { response ->
+        val email = response["email"] as? String
+        val emailVerified = response["email_verified"] as? String
 
-          if (email != null && emailVerified == "true") {
-            userRepository.findByEmailAndDeletedFalse(email)
-              .switchIfEmpty(
-                userRepository.save(
-                  UserEntity(
-                    phone = email, // Temporary mapping
-                    email = email,
-                    type = UserType.CLIENT,
-                    authProvider = "GOOGLE"
-                  )
+        if (email != null && emailVerified == "true") {
+          userRepository.findByEmailAndDeletedFalse(email)
+            .switchIfEmpty(
+              userRepository.save(
+                UserEntity(
+                  phone = email, // Temporary mapping
+                  email = email,
+                  type = UserType.CLIENT,
+                  authProvider = "GOOGLE"
                 )
               )
-              .flatMap { user ->
-                // TODO: Implement device/session for Google login
-                generateTokens(user, null)
-              }
-          } else {
-            Mono.error(RuntimeException("Invalid Google Token"))
-          }
+            )
+            .flatMap { user ->
+              // TODO: Implement device/session for Google login
+              generateTokens(user, null)
+            }
+        } else {
+          Mono.error(RuntimeException("Invalid Google Token"))
         }
-        .onErrorResume {
-          Mono.error(RuntimeException("Google authentication failed"))
-        }
-    }
-
-    private fun toggleDevice(request: VerificationRequest): Mono<DeviceEntity> {
-      LOGGER.debug("Toggle Device By UUID: {}", request.deviceId)
-      return deviceRepository
-        .findByDeviceIdAndDeletedIsFalse(request.deviceId)
-        .map { device -> deviceMapper.toDeviceEntity(device.id, request) }
-        .switchIfEmpty(Mono.just(deviceMapper.toDeviceEntity(request)))
-        .flatMap { device -> deviceRepository.save(device) }
-    }
-
-    private fun generateTokens(user: UserEntity, session: SessionEntity?): Mono<TokenResponse> {
-      return Mono.fromCallable {
-        val now = Date()
-        val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L
-
-        val builder = Jwts.builder()
-          .subject(user.id.toString())
-          .claim("phone", user.phone)
-          .claim("role", user.type.name)
-          .issuedAt(now)
-          .expiration(Date(now.time + validity))
-          .signWith(secretKey)
-
-        if (session != null) {
-          builder.claim("sessionId", session.id.toString())
-          builder.claim("deviceId", session.deviceId.toString())
-        }
-
-        TokenResponse(builder.compact())
       }
+      .onErrorResume {
+        Mono.error(RuntimeException("Google authentication failed"))
+      }
+  }
+
+  private fun toggleDevice(request: VerificationRequest): Mono<DeviceEntity> {
+    LOGGER.debug("Toggle Device By UUID: {}", request.deviceId)
+    return deviceRepository
+      .findByDeviceIdAndDeletedIsFalse(request.deviceId)
+      .map { device -> deviceMapper.toDeviceEntity(device.id, request) }
+      .switchIfEmpty(Mono.just(deviceMapper.toDeviceEntity(request)))
+      .flatMap { device -> deviceRepository.save(device) }
+  }
+
+  private fun generateTokens(user: UserEntity, session: SessionEntity?): Mono<TokenResponse> {
+    return Mono.fromCallable {
+      val now = Date()
+      val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L
+
+      val builder = Jwts.builder()
+        .subject(user.id.toString())
+        .claim("phone", user.phone)
+        .claim("role", user.type.name)
+        .issuedAt(now)
+        .expiration(Date(now.time + validity))
+        .signWith(secretKey)
+
+      if (session != null) {
+        builder.claim("sessionId", session.id.toString())
+        builder.claim("deviceId", session.deviceId.toString())
+      }
+
+      TokenResponse(builder.compact())
     }
   }
+}

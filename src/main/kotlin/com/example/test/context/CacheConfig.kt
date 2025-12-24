@@ -1,5 +1,6 @@
 package com.example.test.context
 
+import com.example.test.model.SmsCache
 import com.example.test.model.VerificationResponse
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -50,11 +51,11 @@ class CacheConfig {
   class RedisConfig {
 
     @Bean
-    fun verificationResponseTemplate(factory: ReactiveRedisConnectionFactory): ReactiveRedisTemplate<String, VerificationResponse> {
-      val valueSerializer = Jackson2JsonRedisSerializer(VerificationResponse::class.java)
+    fun verificationResponseTemplate(factory: ReactiveRedisConnectionFactory): ReactiveRedisTemplate<String, SmsCache> {
+      val valueSerializer = Jackson2JsonRedisSerializer(SmsCache::class.java)
 
       val context = RedisSerializationContext
-        .newSerializationContext<String, VerificationResponse>(StringRedisSerializer())
+        .newSerializationContext<String, SmsCache>(StringRedisSerializer())
         .value(valueSerializer)
         .build()
 

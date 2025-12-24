@@ -1,5 +1,6 @@
 package com.example.test.api
 
+import com.example.test.model.VideoUploadResult
 import com.example.test.service.ImageService
 import com.example.test.service.VideoService
 import org.springframework.http.codec.multipart.FilePart
@@ -16,7 +17,7 @@ class FileController(
 ) {
 
   @PostMapping("/image")
-  suspend fun video(@RequestPart("file") filePart: FilePart): String {
+  suspend fun video(@RequestPart("file") filePart: FilePart): VideoUploadResult {
     return videoService.uploadVideo(filePart)
   }
 
