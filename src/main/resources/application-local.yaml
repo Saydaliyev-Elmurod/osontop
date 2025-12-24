@@ -3,7 +3,7 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: M1msoFt
+      password: secret
     r2dbc:
       repositories:
         enabled: true

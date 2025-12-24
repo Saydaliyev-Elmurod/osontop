@@ -7,7 +7,7 @@
 
     <changeSet id="20241214-02-create-users-table" author="elmurod">
         <sql>
-            CREATE TABLE users (
+            CREATE TABLE osontop."users" (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 first_name VARCHAR(255),
                 last_name VARCHAR(255),

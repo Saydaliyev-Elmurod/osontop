@@ -1,5 +1,6 @@
 package com.example.test.domain
 
+import com.example.test.util.Constant
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.LastModifiedDate
@@ -8,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Table
 import java.time.Instant
 import java.util.UUID
 
-@Table(name = "categories")
+@Table(schema = Constant.SCHEMA, name = "categories")
 data class CategoryEntity(
     @Id
     var id: UUID? = null,

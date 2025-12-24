@@ -1,12 +1,13 @@
 package com.example.test.domain
 
+import com.example.test.util.Constant
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
 import java.time.Instant
 import java.util.UUID
 
-@Table(name = "sessions")
+@Table(schema = Constant.SCHEMA,name = Constant.SESSION_TABLE)
 data class SessionEntity(
   @Id
   var id: UUID? = null,

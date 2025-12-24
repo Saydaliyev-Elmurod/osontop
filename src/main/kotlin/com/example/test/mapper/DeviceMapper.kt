@@ -3,6 +3,7 @@ package com.example.test.mapper
 import com.example.test.domain.DeviceEntity
 import com.example.test.model.VerificationRequest
 import org.mapstruct.Mapper
+import org.mapstruct.Mapping
 import org.mapstruct.ReportingPolicy
 import org.mapstruct.factory.Mappers
 import java.util.*
@@ -15,5 +16,7 @@ interface DeviceMapper {
   }
 
   fun toDeviceEntity(request: VerificationRequest): DeviceEntity
+
+  @Mapping(target = "id", source = "id")
   fun toDeviceEntity(id: UUID?, request: VerificationRequest): DeviceEntity
 }

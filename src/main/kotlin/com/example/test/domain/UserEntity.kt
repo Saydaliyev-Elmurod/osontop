@@ -9,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Table
 import java.time.Instant
 import java.util.UUID
 
-@Table(name = Constant.USER_TABLE)
+@Table(schema = Constant.SCHEMA,name = Constant.USER_TABLE)
 data class UserEntity(
   @Id
   var id: UUID? = null,

@@ -4,3 +4,22 @@
 11:32:12.046255 version@stat F·[] S·0B[] Sc·[]
 11:32:12.046950 db@janitor F·2 G·0
 11:32:12.046963 db@open done T·970.586µs
+=============== Dec 24, 2025 (UTC) ===============
+04:45:20.352313 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+04:45:20.352926 version@stat F·[] S·0B[] Sc·[]
+04:45:20.352976 db@open opening
+04:45:20.353248 journal@recovery F·1
+04:45:20.364663 journal@recovery recovering @1
+04:45:20.365918 memdb@flush created L0@2 N·2 S·260B "\x17\xfcl..tem,v1":"\xc4=\n..-23,v2"
+04:45:20.366476 version@stat F·[1] S·260B[260B] Sc·[0.25]
+04:45:20.369938 db@janitor F·3 G·0
+04:45:20.369987 db@open done T·16.995025ms
+=============== Dec 24, 2025 (UTC) ===============
+07:12:57.937075 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+07:12:57.937417 version@stat F·[1] S·260B[260B] Sc·[0.25]
+07:12:57.937436 db@open opening
+07:12:57.937479 journal@recovery F·1
+07:12:57.938805 journal@recovery recovering @3
+07:12:57.943829 version@stat F·[1] S·260B[260B] Sc·[0.25]
+07:12:57.945591 db@janitor F·3 G·0
+07:12:57.945602 db@open done T·8.161074ms
