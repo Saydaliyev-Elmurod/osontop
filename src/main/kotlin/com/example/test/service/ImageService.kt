@@ -9,20 +9,35 @@ import net.coobird.thumbnailator.Thumbnails
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.UUID
+import javax.imageio.IIOImage
+import javax.imageio.ImageIO
+import javax.imageio.ImageWriteParam
+import javax.imageio.ImageWriter
 
 @Service
 class ImageService(
     private val s3Client: S3Client
 ) {
 
-    @Value("\${application.s3.bucket}")
+    @Value($$"${application.s3.bucket}")
     private lateinit var bucketName: String
+
+
+
+
 
     /**
      * Asosiy funksiya: Faylni qabul qiladi, validatsiya qiladi,
@@ -73,8 +88,6 @@ class ImageService(
                 fileName = "$uuid-small.webp"
             )
         }
-
-        // Barcha yuklashlar tugashini kutamiz
         awaitAll(largeUpload, mediumUpload, smallUpload)
     }
 
@@ -82,41 +95,40 @@ class ImageService(
      * Rasmni o'zgartirish va S3 ga yuklash logikasi.
      * InputStream va OutputStream lar `use` bloki yordamida avtomatik yopiladi.
      */
+
     private fun processAndUpload(
-        originalBytes: ByteArray,
-        width: Int,
-        quality: Double,
-        fileName: String
+      originalBytes: ByteArray,
+      width: Int,
+      quality: Double,
+      fileName: String
     ): String {
-        // ByteArrayInputStream - xotiradan o'qish uchun
-        ByteArrayInputStream(originalBytes).use { inputStream ->
-            // ByteArrayOutputStream - natijani yozish uchun
-            ByteArrayOutputStream().use { outputStream ->
+      // Xotirani tejash uchun "use" ishlatamiz
+      ByteArrayInputStream(originalBytes).use { inputStream ->
+        ByteArrayOutputStream().use { outputStream ->
 
-                // Thumbnailator yordamida resize va format o'zgartirish
-                Thumbnails.of(inputStream)
-                    .width(width)
-                    .outputFormat("webp")
-                    .outputQuality(quality)
-                    .toOutputStream(outputStream)
+          // Thumbnailator endi WebP yozishni biladi (Sejda yordamida)
+          Thumbnails.of(inputStream)
+            .width(width)
+            .outputFormat("webp")    // Endi bu ishlaydi!
+            .outputQuality(quality)  // 0.8 kabi sifat
+            .toOutputStream(outputStream)
 
-                val processedBytes = outputStream.toByteArray()
+          val processedBytes = outputStream.toByteArray()
 
-                // S3 ga yuklash
-                val putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(fileName)
-                    .contentType("image/webp")
-                    .build()
+          val putObjectRequest = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(fileName)
+            .contentType("image/webp")
+            .build()
 
-                s3Client.putObject(
-                    putObjectRequest,
-                    RequestBody.fromBytes(processedBytes)
-                )
+          s3Client.putObject(
+            putObjectRequest,
+            RequestBody.fromBytes(processedBytes)
+          )
 
-                return fileName
-            }
+          return fileName
         }
+      }
     }
 
     private fun validateImage(filePart: FilePart) {

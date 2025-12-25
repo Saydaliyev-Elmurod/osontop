@@ -55,8 +55,8 @@ dependencies {
 
   // Image Processing
   implementation("net.coobird:thumbnailator:0.4.20")
-  implementation("com.twelvemonkeys.imageio:imageio-webp:3.10.1")
-
+// MANA SHU YOZISHNI (WRITE) QO'LLAB-QUVVATLAYDI:
+  implementation("org.sejda.imageio:webp-imageio:0.1.6")
   // FFmpeg wrapper (optional, but good for probing)
   implementation("net.bramp.ffmpeg:ffmpeg:0.8.0")
 
