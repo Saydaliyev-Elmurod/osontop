@@ -4,7 +4,7 @@ server:
 
 spring:
   profiles:
-    active: dev
+    active: local
   application:
     name: kotlin-service
 
@@ -19,16 +19,13 @@ springdoc:
 
 application:
   s3:
-    # Dockerda: http://seaweedfs:8333, Localda: http://localhost:8333
-    # ${ENV_VAR:default_value} strukturasi ishlatilgan
     endpoint: ${APPLICATION_S3_ENDPOINT:http://localhost:8333}
+    access-key: ${APPLICATION_S3_ACCESS_KEY:secret}
+    secret-key: ${APPLICATION_S3_SECRET_KEY:password}
 
-    # SeaweedFS da bu kalitlar shunchaki bo'sh bo'lmasligi kerak
-    access-key: ${APPLICATION_S3_ACCESS_KEY:any}
-    secret-key: ${APPLICATION_S3_SECRET_KEY:any}
-
-    # Fayllar saqlanadigan "Paqir" nomi
-    bucket: ${APPLICATION_S3_BUCKET:videos}
+    bucket:
+      images: images
+      videos: videos
 
     # Region (SeaweedFS uchun ahamiyatsiz, lekin SDK talab qiladi)
     region: us-east-1

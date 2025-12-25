@@ -22,8 +22,7 @@
                 created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 deleted BOOLEAN DEFAULT FALSE,
-                version BIGINT DEFAULT 0,
-                CONSTRAINT fk_categories_parent_id FOREIGN KEY (parent_id) REFERENCES osontop.categories (id)
+                version BIGINT DEFAULT 0
             );
         </sql>
     </changeSet>

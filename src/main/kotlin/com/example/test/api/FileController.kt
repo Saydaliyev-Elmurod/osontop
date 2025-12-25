@@ -1,5 +1,6 @@
 package com.example.test.api
 
+import com.example.test.model.FileResponse
 import com.example.test.model.VideoUploadResult
 import com.example.test.service.ImageService
 import com.example.test.service.VideoService
@@ -8,7 +9,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/files/v1")
@@ -23,9 +23,7 @@ class FileController(
   }
 
   @PostMapping("/image")
-  suspend fun image(@RequestPart("file") filePart: FilePart): List<String> {
-    return imageService.uploadImage(filePart)
+  suspend fun image(@RequestPart("file") filePart: FilePart): FileResponse {
+    return FileResponse(imageService.uploadImage(filePart))
   }
-
-
 }

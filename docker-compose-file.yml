@@ -5,15 +5,13 @@ services:
     image: chrislusf/seaweedfs:latest
     container_name: seaweedfs_server
     restart: always
-    # MANA BU QATOR O'ZGARDI (-s3.config qo'shildi):
     command: "server -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -filer -filer.port=8888 -dir=/data -master.volumeSizeLimitMB=1024"
     ports:
       - "8333:8333"
       - "8888:8888"
       - "9333:9333"
     volumes:
-      - /home/elmurod/my_storage:/data
-      # MANA BU QATORNI QO'SHING (Config faylni ulash):
+      - /files:/data
       - ./s3_config.json:/etc/seaweedfs/s3.json
     deploy:
       resources:

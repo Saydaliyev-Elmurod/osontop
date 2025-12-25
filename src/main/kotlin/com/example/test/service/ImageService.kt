@@ -1,5 +1,7 @@
 package com.example.test.service
 
+import com.example.test.exception.BadRequestException
+import com.example.test.exception.handler.ErrorCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -7,143 +9,118 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.reactor.awaitSingle
 import net.coobird.thumbnailator.Thumbnails
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.stereotype.Service
-import org.springframework.web.multipart.MultipartFile
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.util.UUID
-import javax.imageio.IIOImage
-import javax.imageio.ImageIO
-import javax.imageio.ImageWriteParam
-import javax.imageio.ImageWriter
+import java.util.*
 
 @Service
 class ImageService(
-    private val s3Client: S3Client
+  private val s3Client: S3Client
 ) {
+  @Value($$"${application.s3.bucket.images}")
+  private lateinit var bucketName: String
+  suspend fun uploadImage(filePart: FilePart): String = coroutineScope {
+    val originalBytes = validateAndGetBytes(filePart)
 
-    @Value($$"${application.s3.bucket}")
-    private lateinit var bucketName: String
+    val uuid = UUID.randomUUID().toString()
 
-
-
-
-
-    /**
-     * Asosiy funksiya: Faylni qabul qiladi, validatsiya qiladi,
-     * 3 xil o'lchamda qayta ishlaydi va parallel ravishda S3 ga yuklaydi.
-     */
-    suspend fun uploadImage(filePart: FilePart): List<String> = coroutineScope {
-        // 1. Validatsiya
-        validateImage(filePart)
-
-        // Fayl kontentini xotiraga o'qib olamiz (kichik fayllar uchun)
-        // Katta fayllar uchun DataBufferUtils.join(filePart.content()) ishlatish tavsiya etiladi,
-        // lekin Thumbnailator baribir InputStream talab qiladi.
-        val originalBytes = filePart.content()
-            .reduce { d1, d2 -> d1.write(d2); d1 } // Barcha bufferlarni birlashtirish
-            .map { buffer ->
-                val bytes = ByteArray(buffer.readableByteCount())
-                buffer.read(bytes)
-                bytes
-            }.awaitSingle() // Reactor Mono -> Coroutine
-
-        val uuid = UUID.randomUUID().toString()
-
-        // 2. Qayta ishlash va 3. Parallel yuklash
-        // Har bir o'lcham uchun alohida async task ishga tushiramiz
-        val largeUpload = async(Dispatchers.IO) {
-            processAndUpload(
-                originalBytes = originalBytes,
-                width = 1080,
-                quality = 0.80,
-                fileName = "$uuid-large.webp"
-            )
-        }
-
-        val mediumUpload = async(Dispatchers.IO) {
-            processAndUpload(
-                originalBytes = originalBytes,
-                width = 720,
-                quality = 0.75,
-                fileName = "$uuid-medium.webp"
-            )
-        }
-
-        val smallUpload = async(Dispatchers.IO) {
-            processAndUpload(
-                originalBytes = originalBytes,
-                width = 320,
-                quality = 0.60,
-                fileName = "$uuid-small.webp"
-            )
-        }
-        awaitAll(largeUpload, mediumUpload, smallUpload)
+    val largeUpload = async(Dispatchers.IO) {
+      processAndUpload(
+        originalBytes = originalBytes,
+        width = 1080,
+        quality = 0.80,
+        fileName = "$uuid-large.webp"
+      )
     }
 
-    /**
-     * Rasmni o'zgartirish va S3 ga yuklash logikasi.
-     * InputStream va OutputStream lar `use` bloki yordamida avtomatik yopiladi.
-     */
+    val mediumUpload = async(Dispatchers.IO) {
+      processAndUpload(
+        originalBytes = originalBytes,
+        width = 720,
+        quality = 0.75,
+        fileName = "$uuid-medium.webp"
+      )
+    }
 
-    private fun processAndUpload(
-      originalBytes: ByteArray,
-      width: Int,
-      quality: Double,
-      fileName: String
-    ): String {
-      // Xotirani tejash uchun "use" ishlatamiz
-      ByteArrayInputStream(originalBytes).use { inputStream ->
-        ByteArrayOutputStream().use { outputStream ->
+    val smallUpload = async(Dispatchers.IO) {
+      processAndUpload(
+        originalBytes = originalBytes,
+        width = 320,
+        quality = 0.60,
+        fileName = "$uuid-small.webp"
+      )
+    }
+    awaitAll(largeUpload, mediumUpload, smallUpload)
+    uuid
+  }
 
-          // Thumbnailator endi WebP yozishni biladi (Sejda yordamida)
-          Thumbnails.of(inputStream)
-            .width(width)
-            .outputFormat("webp")    // Endi bu ishlaydi!
-            .outputQuality(quality)  // 0.8 kabi sifat
-            .toOutputStream(outputStream)
+  private suspend fun validateAndGetBytes(filePart: FilePart): ByteArray {
+    val filename = filePart.filename().lowercase()
+    val allowedExtensions = listOf(".jpg", ".jpeg", ".png", ".webp")
 
-          val processedBytes = outputStream.toByteArray()
+    if (allowedExtensions.none { filename.endsWith(it) }) {
+      throw IllegalArgumentException("Faqat rasm fayllari (JPG, PNG, WebP) qabul qilinadi.")
+    }
 
-          val putObjectRequest = PutObjectRequest.builder()
-            .bucket(bucketName)
-            .key(fileName)
-            .contentType("image/webp")
-            .build()
+    val maxSize = 2 * 1024 * 1024
+    var currentSize = 0
 
-          s3Client.putObject(
-            putObjectRequest,
-            RequestBody.fromBytes(processedBytes)
-          )
+    val bytes = filePart.content()
+      .map { buffer ->
+        val readable = buffer.readableByteCount()
+        currentSize += readable
 
-          return fileName
+        if (currentSize > maxSize) {
+          DataBufferUtils.release(buffer)
+          throw BadRequestException(ErrorCode.MAX_UPLOAD_SIZE_EXCEEDED, "File hajmi 2MB dan oshmasligi kerak")
         }
+
+        val bytes = ByteArray(readable)
+        buffer.read(bytes)
+        DataBufferUtils.release(buffer)
+        bytes
+      }
+      .collectList()
+      .awaitSingle()
+      .fold(ByteArray(0)) { acc, curr -> acc + curr }
+    return bytes
+  }
+
+  private fun processAndUpload(
+    originalBytes: ByteArray,
+    width: Int,
+    quality: Double,
+    fileName: String
+  ): String {
+    ByteArrayInputStream(originalBytes).use { inputStream ->
+      ByteArrayOutputStream().use { outputStream ->
+        Thumbnails.of(inputStream)
+          .width(width)
+          .outputFormat("webp")
+          .outputQuality(quality)
+          .toOutputStream(outputStream)
+
+        val processedBytes = outputStream.toByteArray()
+
+        val putObjectRequest = PutObjectRequest.builder()
+          .bucket(bucketName)
+          .key(fileName)
+          .contentType("image/webp")
+          .build()
+
+        s3Client.putObject(
+          putObjectRequest,
+          RequestBody.fromBytes(processedBytes)
+        )
+
+        return fileName
       }
     }
-
-    private fun validateImage(filePart: FilePart) {
-        val filename = filePart.filename().lowercase()
-        val contentType = filePart.headers().contentType?.toString()?.lowercase()
-
-        // Oddiy tekshiruv: kengaytma va content-type
-        val allowedExtensions = listOf(".jpg", ".jpeg", ".png", ".webp")
-        val allowedTypes = listOf("image/jpeg", "image/png", "image/webp")
-
-        val hasValidExtension = allowedExtensions.any { filename.endsWith(it) }
-        val hasValidType = allowedTypes.any { contentType == it }
-
-        if (!hasValidExtension && !hasValidType) {
-            throw IllegalArgumentException("Faqat rasm fayllari (JPG, PNG, WebP) qabul qilinadi.")
-        }
-    }
+  }
 }
