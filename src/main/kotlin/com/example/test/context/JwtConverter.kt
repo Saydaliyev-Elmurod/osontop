@@ -47,7 +47,7 @@ class JwtConverter(
                   deviceId = deviceId,
                   sessionId = sessionId
                 )
-                CustomAuthenticationToken(principal, listOf(SimpleGrantedAuthority(userResponse.role.name)))
+                CustomAuthenticationToken(principal, listOf(SimpleGrantedAuthority(userResponse.type.name)))
               }
           }
       }

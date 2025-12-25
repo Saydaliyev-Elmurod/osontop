@@ -1,6 +1,7 @@
 package com.example.test.mapper
 
 import com.example.test.domain.DeviceEntity
+import com.example.test.model.AdminLoginRequest
 import com.example.test.model.VerificationRequest
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
@@ -18,6 +19,12 @@ interface DeviceMapper {
   @Mapping(target = "id", ignore = true)
   fun toDeviceEntity(request: VerificationRequest): DeviceEntity
 
+  @Mapping(target = "id", ignore = true)
+  fun toDeviceEntity(request: AdminLoginRequest): DeviceEntity
+
   @Mapping(target = "id", source = "id")
   fun toDeviceEntity(id: UUID?, request: VerificationRequest): DeviceEntity
+  @Mapping(target = "id", source = "id")
+
+  fun toDeviceEntity(id: UUID?, request: AdminLoginRequest): DeviceEntity
 }

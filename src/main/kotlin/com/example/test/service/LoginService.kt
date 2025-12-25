@@ -125,12 +125,25 @@ class LoginService(
   }
 
   fun loginAdmin(request: AdminLoginRequest): Mono<TokenResponse> {
-    return userRepository.findByPhoneAndDeletedFalse(request.phone)
-      .filter { it.type == UserType.ADMIN }
+    return userRepository.findByPhoneAndTypeAndDeletedFalse(request.phone, UserType.ADMIN)
       .switchIfEmpty(Mono.error(RuntimeException("Admin not found")))
       .flatMap { user ->
         if (passwordEncoder.matches(request.password, user.password)) {
-          jwtService.generateTokens(user, null)
+          toggleDevice(request)
+            .flatMap { device ->
+              sessionRepository.deleteByDeviceId(device.id!!)
+                .then(Mono.just(device))
+            }
+            .flatMap { device ->
+              val session = SessionEntity(
+                userId = user.id!!,
+                deviceId = device.id!!
+              )
+              sessionRepository.save(session)
+            }
+            .flatMap { session ->
+              jwtService.generateTokens(user, session)
+            }
         } else {
           Mono.error(RuntimeException("Invalid password"))
         }
@@ -151,7 +164,6 @@ class LoginService(
             .switchIfEmpty(
               userRepository.save(
                 UserEntity(
-                  phone = email, // Temporary mapping
                   email = email,
                   type = UserType.CLIENT,
                   authProvider = "GOOGLE"
@@ -173,6 +185,15 @@ class LoginService(
 
   private fun toggleDevice(request: VerificationRequest): Mono<DeviceEntity> {
     LOGGER.debug("Toggle Device By UUID: {}", request.deviceId)
+    return deviceRepository
+      .findByDeviceIdAndDeletedIsFalse(request.deviceId)
+      .switchIfEmpty(Mono.just(deviceMapper.toDeviceEntity(request)))
+      .map { device -> deviceMapper.toDeviceEntity(device.id, request) }
+      .flatMap { device -> deviceRepository.save(device) }
+  }
+
+  private fun toggleDevice(request: AdminLoginRequest): Mono<DeviceEntity> {
+    LOGGER.debug("Toggle Device By UUID admin: {}", request.deviceId)
     return deviceRepository
       .findByDeviceIdAndDeletedIsFalse(request.deviceId)
       .switchIfEmpty(Mono.just(deviceMapper.toDeviceEntity(request)))

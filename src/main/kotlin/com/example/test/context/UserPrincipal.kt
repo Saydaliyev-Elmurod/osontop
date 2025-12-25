@@ -15,7 +15,7 @@ class CustomAuthenticationToken(
   private val principal: UserPrincipal,
   private val authorities: Collection<GrantedAuthority> = emptyList()
 ) : Authentication {
-  override fun getName(): String = principal.user.name
+  override fun getName(): String = principal.user.firstName?:""
   override fun getAuthorities(): Collection<GrantedAuthority> = authorities
   override fun getCredentials(): Any? = null
   override fun getDetails(): Any? = null

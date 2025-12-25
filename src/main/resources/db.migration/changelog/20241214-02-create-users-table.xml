@@ -11,7 +11,7 @@
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 first_name VARCHAR(255),
                 last_name VARCHAR(255),
-                phone VARCHAR(255) NOT NULL UNIQUE,
+                phone VARCHAR(255) NOT NULL ,
                 email VARCHAR(255),
                 password VARCHAR(255),
                 auth_provider VARCHAR(50),
@@ -21,6 +21,9 @@
                 deleted BOOLEAN DEFAULT FALSE,
                 version BIGINT DEFAULT 0
             );
+
+
+
         </sql>
     </changeSet>
 
