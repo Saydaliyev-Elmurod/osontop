@@ -26,15 +26,10 @@ application:
     bucket:
       images: images
       videos: videos
-
-    # Region (SeaweedFS uchun ahamiyatsiz, lekin SDK talab qiladi)
     region: us-east-1
 
   video:
-    # Vaqtincha fayllar saqlanadigan joy.
-    # Docker ichida "/app/temp", localda esa "./temp" bo'ladi
-    temp-dir: ${APPLICATION_VIDEO_TEMP_DIR:/app/temp}
-
+    temp-dir: ${APPLICATION_VIDEO_TEMP_DIR:/home/elmurod/temp_videos}
     # FFmpeg yo'li. Dockerda shunchaki "ffmpeg" (PATH da bor)
     ffmpeg-path: ffmpeg
   token:

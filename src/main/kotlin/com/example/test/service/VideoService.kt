@@ -4,6 +4,7 @@ import com.example.test.model.VideoUploadResult
 import com.example.test.util.logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.codec.multipart.FilePart
@@ -22,10 +23,10 @@ class VideoService(
   private val s3Client: S3Client
 ) {
 
-  @Value("\${application.s3.bucket}")
+  @Value($$"${application.s3.bucket.videos}")
   private lateinit var bucketName: String
 
-  @Value("\${application.video.temp-dir:/tmp/video-processing}")
+  @Value($$"${application.video.temp-dir:/tmp/video-processing}")
   private lateinit var tempDirBase: String
 
   private val logger = logger<VideoService>()!!
@@ -35,15 +36,12 @@ class VideoService(
     val workDir = Path.of(tempDirBase, uuid)
 
     try {
-      // 1. Vaqtincha papka yaratish
       withContext(Dispatchers.IO) {
         Files.createDirectories(workDir)
       }
 
-      // 2. Input faylni saqlash
       val inputFile = workDir.resolve("input.mp4")
-      // FilePart.transferTo() eng optimal usul, chunki u to'g'ridan-to'g'ri diskka yozadi (Zero-copy)
-      filePart.transferTo(inputFile).awaitSingle()
+      filePart.transferTo(inputFile).awaitSingleOrNull()
 
       // 3. Thumbnail va HLS jarayonlari (Parallel)
       logger.info("Starting processing for $uuid")
@@ -70,7 +68,6 @@ class VideoService(
       logger.error("Error processing video $uuid", e)
       throw e
     } finally {
-      // 5. Cleanup - har qanday holatda ham vaqtincha fayllarni o'chirish
       withContext(Dispatchers.IO) {
         cleanup(workDir)
       }
@@ -102,8 +99,6 @@ class VideoService(
   }
 
   private suspend fun transcodeToHls(inputFile: Path, workDir: Path) = withContext(Dispatchers.IO) {
-    val masterPlaylist = workDir.resolve("master.m3u8").absolutePathString()
-    val segmentFilename = workDir.resolve("segment_%03d.ts").absolutePathString()
 
     // FFmpeg komandasi
     val command = listOf(
@@ -111,10 +106,14 @@ class VideoService(
       "-i", inputFile.absolutePathString(),
       "-codec:v", "libx264",
       "-codec:a", "aac",
+
+      "-crf", "28",        // Sifat balansi (23=yaxshi, 28=o'rta/yengil, 30+=past sifat)
+      "-preset", "veryfast", // Tezroq ishlashi uchun
+
       "-hls_time", "10",
       "-hls_playlist_type", "vod",
-      "-hls_segment_filename", segmentFilename,
-      masterPlaylist
+      "-hls_segment_filename", workDir.resolve("segment_%03d.ts").absolutePathString(),
+      workDir.resolve("master.m3u8").absolutePathString()
     )
 
     runProcess(command, workDir)
