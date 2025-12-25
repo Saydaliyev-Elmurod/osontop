@@ -11,12 +11,9 @@ import com.example.test.model.*
 import com.example.test.repository.DeviceRepository
 import com.example.test.repository.SessionRepository
 import com.example.test.repository.UserRepository
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.security.Keys
 import lombok.extern.log4j.Log4j2
 import org.apache.logging.log4j.LogManager
 import org.springframework.data.redis.core.ReactiveRedisTemplate
-import org.springframework.data.redis.core.ReactiveStringRedisTemplate
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,7 +22,6 @@ import reactor.core.publisher.Mono
 import java.time.Duration
 import java.time.Instant
 import java.util.*
-import javax.crypto.SecretKey
 import kotlin.random.Random
 
 @Service
@@ -36,13 +32,12 @@ class LoginService(
   private val passwordEncoder: PasswordEncoder,
   private val deviceRepository: DeviceRepository,
   private val sessionRepository: SessionRepository,
-  private val deviceMapper: DeviceMapper
+  private val deviceMapper: DeviceMapper,
+  private val jwtService: JwtService,
 ) {
   companion object {
     private val LOGGER = LogManager.getLogger()
     private const val CODE_PREFIX = "CODE:"
-    private val secretKey: SecretKey =
-      Keys.hmacShaKeyFor("your-very-secure-and-long-secret-key-that-is-at-least-256-bits".toByteArray())
   }
 
   private val buildType = "dev"
@@ -82,7 +77,7 @@ class LoginService(
           )
           redisTemplate.opsForValue()
             .set(key, cache, Duration.ofMinutes(3))
-            .doOnSuccess { LOGGER.info("Generated code for ${request.phone} is $code") }
+            .doOnSuccess { LOGGER.info("Generate code for ${request.phone} ") }
             .thenReturn(response)
         }
       )
@@ -118,7 +113,7 @@ class LoginService(
                       sessionRepository.save(session)
                     }
                     .flatMap { session ->
-                      generateTokens(user, session)
+                      jwtService.generateTokens(user, session)
                     }
                 }
             )
@@ -135,8 +130,7 @@ class LoginService(
       .switchIfEmpty(Mono.error(RuntimeException("Admin not found")))
       .flatMap { user ->
         if (passwordEncoder.matches(request.password, user.password)) {
-          // TODO: Implement device/session for admin
-          generateTokens(user, null)
+          jwtService.generateTokens(user, null)
         } else {
           Mono.error(RuntimeException("Invalid password"))
         }
@@ -165,8 +159,8 @@ class LoginService(
               )
             )
             .flatMap { user ->
-              // TODO: Implement device/session for Google login
-              generateTokens(user, null)
+              ///todo
+              jwtService.generateTokens(user, null)
             }
         } else {
           Mono.error(RuntimeException("Invalid Google Token"))
@@ -186,25 +180,5 @@ class LoginService(
       .flatMap { device -> deviceRepository.save(device) }
   }
 
-  private fun generateTokens(user: UserEntity, session: SessionEntity?): Mono<TokenResponse> {
-    return Mono.fromCallable {
-      val now = Date()
-      val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L
 
-      val builder = Jwts.builder()
-        .subject(user.id.toString())
-        .claim("userId", user.id)
-        .claim("role", user.type.name)
-        .issuedAt(now)
-        .expiration(Date(now.time + validity))
-        .signWith(secretKey)
-
-      if (session != null) {
-        builder.claim("sessionId", session.id.toString())
-        builder.claim("deviceId", session.deviceId.toString())
-      }
-
-      TokenResponse(builder.compact())
-    }
-  }
 }

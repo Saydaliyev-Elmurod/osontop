@@ -1,12 +1,17 @@
 package com.example.test.service
 
 
+import com.example.test.domain.SessionEntity
+import com.example.test.domain.UserEntity
+import com.example.test.domain.UserType
+import com.example.test.model.TokenResponse
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Mono
 import java.util.Date
 import java.util.UUID
 import javax.crypto.SecretKey
@@ -66,5 +71,27 @@ class JwtService(
       .build()
       .parseSignedClaims(token)
       .payload
+  }
+
+  fun generateTokens(user: UserEntity, session: SessionEntity?): Mono<TokenResponse> {
+    return Mono.fromCallable {
+      val now = Date()
+      val validity = if (user.type == UserType.ADMIN) 86400000L else 15778800000L
+
+      val builder = Jwts.builder()
+        .subject(user.id.toString())
+        .claim("userId", user.id)
+        .claim("role", user.type.name)
+        .issuedAt(now)
+        .expiration(Date(now.time + validity))
+        .signWith(signingKey)
+
+      if (session != null) {
+        builder.claim("sessionId", session.id.toString())
+        builder.claim("deviceId", session.deviceId.toString())
+      }
+
+      TokenResponse(builder.compact())
+    }
   }
 }

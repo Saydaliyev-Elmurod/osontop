@@ -8,6 +8,8 @@ import io.jsonwebtoken.Claims
 import io.jsonwebtoken.JwtException
 import org.springframework.http.HttpHeaders
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -45,7 +47,7 @@ class JwtConverter(
                   deviceId = deviceId,
                   sessionId = sessionId
                 )
-                CustomAuthenticationToken(principal)
+                CustomAuthenticationToken(principal, listOf(SimpleGrantedAuthority(userResponse.role.name)))
               }
           }
       }
