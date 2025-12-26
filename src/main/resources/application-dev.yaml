@@ -24,3 +24,21 @@ spring:
     liquibase-schema: osontop
     default-schema: osontop
 
+
+
+application:
+  s3:
+    endpoint: ${APPLICATION_S3_ENDPOINT:http://seaweedfs_server:8333}
+    access-key: ${APPLICATION_S3_ACCESS_KEY:secret}
+    secret-key: ${APPLICATION_S3_SECRET_KEY:password}
+
+    bucket:
+      images: images
+      videos: videos
+    region: us-east-1
+
+  video:
+    temp-dir: ${APPLICATION_VIDEO_TEMP_DIR:/temp_videos}
+    # FFmpeg yo'li. Dockerda shunchaki "ffmpeg" (PATH da bor)
+    ffmpeg-path: ffmpeg
+
