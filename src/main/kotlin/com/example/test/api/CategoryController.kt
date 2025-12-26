@@ -1,8 +1,8 @@
 package com.example.test.api
 
 import com.example.test.context.UserPrincipal
-import com.example.test.model.CategoryRequest
-import com.example.test.model.CategoryResponse
+import com.example.test.model.request.CategoryRequest
+import com.example.test.model.response.CategoryResponse
 import com.example.test.service.CategoryService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*

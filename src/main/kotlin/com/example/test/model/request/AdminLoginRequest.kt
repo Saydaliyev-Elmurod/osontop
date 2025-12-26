@@ -1,6 +1,6 @@
-package com.example.test.model
+package com.example.test.model.request
 
-import com.example.test.domain.DeviceType
+import com.example.test.domain.enums.DeviceType
 
 data class AdminLoginRequest(
     val phone: String,

@@ -1,8 +1,8 @@
 package com.example.test.mapper
 
 import com.example.test.domain.DeviceEntity
-import com.example.test.model.AdminLoginRequest
-import com.example.test.model.VerificationRequest
+import com.example.test.model.request.AdminLoginRequest
+import com.example.test.model.request.VerificationRequest
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
 import org.mapstruct.ReportingPolicy

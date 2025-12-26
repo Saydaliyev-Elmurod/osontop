@@ -1,4 +1,4 @@
-package com.example.test.domain
+package com.example.test.domain.enums
 
 enum class DeviceType {
   IOS,

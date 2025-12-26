@@ -1,4 +1,4 @@
-package com.example.test.model
+package com.example.test.model.request
 
 import com.example.test.model.common.TextModel
 import java.util.UUID

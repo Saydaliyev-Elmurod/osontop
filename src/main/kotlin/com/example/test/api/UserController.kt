@@ -1,8 +1,8 @@
 package com.example.test.api
 
 import com.example.test.context.UserPrincipal
-import com.example.test.model.UpdateUserRequest
-import com.example.test.model.UserResponse
+import com.example.test.model.request.UpdateUserRequest
+import com.example.test.model.response.UserResponse
 import com.example.test.service.UserService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*

@@ -1,4 +1,4 @@
-package com.example.test.model
+package com.example.test.model.response
 
 import java.time.Instant
 import java.util.UUID

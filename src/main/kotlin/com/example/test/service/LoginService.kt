@@ -3,11 +3,17 @@ package com.example.test.service
 import com.example.test.domain.DeviceEntity
 import com.example.test.domain.SessionEntity
 import com.example.test.domain.UserEntity
-import com.example.test.domain.UserType
+import com.example.test.domain.enums.UserType
 import com.example.test.exception.BadRequestException
 import com.example.test.exception.handler.ErrorCode
 import com.example.test.mapper.DeviceMapper
-import com.example.test.model.*
+import com.example.test.model.cache.SmsCache
+import com.example.test.model.request.AdminLoginRequest
+import com.example.test.model.request.GoogleLoginRequest
+import com.example.test.model.request.PhoneRequest
+import com.example.test.model.request.VerificationRequest
+import com.example.test.model.response.TokenResponse
+import com.example.test.model.response.VerificationResponse
 import com.example.test.repository.DeviceRepository
 import com.example.test.repository.SessionRepository
 import com.example.test.repository.UserRepository
@@ -90,7 +96,7 @@ class LoginService(
         if (codeFromRedis.code == request.code) {
           redisTemplate.opsForValue().delete(CODE_PREFIX + request.phone)
             .then(
-              userRepository.findByPhoneAndDeletedFalse(request.phone)
+              userRepository.findByPhoneAndTypeAndDeletedFalse(request.phone, UserType.CLIENT)
                 .switchIfEmpty(
                   userRepository.save(
                     UserEntity(

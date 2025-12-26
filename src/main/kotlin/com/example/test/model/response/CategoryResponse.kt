@@ -1,4 +1,4 @@
-package com.example.test.model
+package com.example.test.model.response
 
 import com.example.test.model.common.TextModel
 import java.time.Instant

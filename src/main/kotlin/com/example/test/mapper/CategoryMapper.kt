@@ -1,8 +1,8 @@
 package com.example.test.mapper
 
 import com.example.test.domain.CategoryEntity
-import com.example.test.model.CategoryRequest
-import com.example.test.model.CategoryResponse
+import com.example.test.model.request.CategoryRequest
+import com.example.test.model.response.CategoryResponse
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
 import org.mapstruct.MappingTarget

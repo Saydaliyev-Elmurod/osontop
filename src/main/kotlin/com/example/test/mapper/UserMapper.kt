@@ -1,17 +1,12 @@
 package com.example.test.mapper
 
-import com.example.test.domain.DeviceEntity
 import com.example.test.domain.UserEntity
-import com.example.test.model.AdminLoginRequest
-import com.example.test.model.UpdateUserRequest
-import com.example.test.model.UserResponse
-import com.example.test.model.VerificationRequest
+import com.example.test.model.request.UpdateUserRequest
+import com.example.test.model.response.UserResponse
 import org.mapstruct.Mapper
-import org.mapstruct.Mapping
 import org.mapstruct.MappingTarget
 import org.mapstruct.ReportingPolicy
 import org.mapstruct.factory.Mappers
-import java.util.*
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 interface UserMapper {

@@ -1,8 +1,8 @@
 package com.example.test.service
 
 import com.example.test.mapper.UserMapper
-import com.example.test.model.UpdateUserRequest
-import com.example.test.model.UserResponse
+import com.example.test.model.request.UpdateUserRequest
+import com.example.test.model.response.UserResponse
 import com.example.test.repository.UserRepository
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull

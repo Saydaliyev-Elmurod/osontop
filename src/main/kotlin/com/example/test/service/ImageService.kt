@@ -2,6 +2,8 @@ package com.example.test.service
 
 import com.example.test.exception.BadRequestException
 import com.example.test.exception.handler.ErrorCode
+import com.example.test.model.enums.FileFormat
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -25,38 +27,42 @@ class ImageService(
 ) {
   @Value($$"${application.s3.bucket.images}")
   private lateinit var bucketName: String
-  suspend fun uploadImage(filePart: FilePart): String = coroutineScope {
+  suspend fun uploadImage(filePart: FilePart, formats: List<FileFormat>): String = coroutineScope {
     val originalBytes = validateAndGetBytes(filePart)
 
     val uuid = UUID.randomUUID().toString()
-
-    val largeUpload = async(Dispatchers.IO) {
-      processAndUpload(
-        originalBytes = originalBytes,
-        width = 1080,
-        quality = 0.80,
-        fileName = "$uuid-large.webp"
-      )
+    val uploadJobs = mutableListOf<Deferred<Any>>()
+    if (formats.contains(FileFormat.LARGE)) {
+      uploadJobs += async(Dispatchers.IO) {
+        processAndUpload(
+          originalBytes = originalBytes,
+          width = 1080,
+          quality = 0.80,
+          fileName = "$uuid-large.webp"
+        )
+      }
     }
-
-    val mediumUpload = async(Dispatchers.IO) {
-      processAndUpload(
-        originalBytes = originalBytes,
-        width = 720,
-        quality = 0.75,
-        fileName = "$uuid-medium.webp"
-      )
+    if (formats.contains(FileFormat.MEDIUM)) {
+      uploadJobs += async(Dispatchers.IO) {
+        processAndUpload(
+          originalBytes = originalBytes,
+          width = 720,
+          quality = 0.75,
+          fileName = "$uuid-medium.webp"
+        )
+      }
     }
-
-    val smallUpload = async(Dispatchers.IO) {
-      processAndUpload(
-        originalBytes = originalBytes,
-        width = 320,
-        quality = 0.60,
-        fileName = "$uuid-small.webp"
-      )
+    if (formats.contains(FileFormat.SMALL)) {
+      uploadJobs += async(Dispatchers.IO) {
+        processAndUpload(
+          originalBytes = originalBytes,
+          width = 320,
+          quality = 0.60,
+          fileName = "$uuid-small.webp"
+        )
+      }
     }
-    awaitAll(largeUpload, mediumUpload, smallUpload)
+    uploadJobs.awaitAll()
     uuid
   }
 

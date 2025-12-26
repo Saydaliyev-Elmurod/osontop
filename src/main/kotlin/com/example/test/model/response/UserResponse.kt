@@ -1,8 +1,8 @@
-package com.example.test.model
+package com.example.test.model.response
 
-import com.example.test.domain.Gender
-import com.example.test.domain.Language
-import com.example.test.domain.UserType
+import com.example.test.domain.enums.Gender
+import com.example.test.domain.enums.Language
+import com.example.test.domain.enums.UserType
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID

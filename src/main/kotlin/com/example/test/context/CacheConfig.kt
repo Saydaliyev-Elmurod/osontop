@@ -1,6 +1,6 @@
 package com.example.test.context
 
-import com.example.test.model.SmsCache
+import com.example.test.model.cache.SmsCache
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature

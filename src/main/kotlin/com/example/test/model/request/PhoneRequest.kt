@@ -1,4 +1,4 @@
-package com.example.test.model
+package com.example.test.model.request
 
 import com.example.test.exception.handler.ErrorCode
 import com.example.test.util.Validator

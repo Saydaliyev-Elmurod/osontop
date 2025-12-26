@@ -3,8 +3,8 @@ package com.example.test.service
 
 import com.example.test.domain.SessionEntity
 import com.example.test.domain.UserEntity
-import com.example.test.domain.UserType
-import com.example.test.model.TokenResponse
+import com.example.test.domain.enums.UserType
+import com.example.test.model.response.TokenResponse
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.io.Decoders

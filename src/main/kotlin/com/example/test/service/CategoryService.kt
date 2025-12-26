@@ -2,8 +2,8 @@ package com.example.test.service
 
 import com.example.test.domain.CategoryEntity
 import com.example.test.mapper.CategoryMapper
-import com.example.test.model.CategoryRequest
-import com.example.test.model.CategoryResponse
+import com.example.test.model.request.CategoryRequest
+import com.example.test.model.response.CategoryResponse
 import com.example.test.repository.CategoryRepository
 import lombok.extern.log4j.Log4j2
 import org.apache.logging.log4j.LogManager
@@ -76,7 +76,7 @@ class CategoryService(
     fun delete(id: UUID): Mono<Void> {
         return categoryRepository.findByIdAndDeletedFalse(id)
             .switchIfEmpty(Mono.error(RuntimeException("Category not found")))
-            .flatMap { 
+            .flatMap {
                 it.deleted = true
                 categoryRepository.save(it)
             }
