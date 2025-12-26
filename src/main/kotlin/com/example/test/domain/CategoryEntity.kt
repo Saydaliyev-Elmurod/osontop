@@ -1,16 +1,11 @@
 package com.example.test.domain
 
 import com.example.test.util.Constant
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.Id
-import org.springframework.data.annotation.LastModifiedDate
-import org.springframework.data.annotation.Version
 import org.springframework.data.relational.core.mapping.Table
-import java.time.Instant
-import java.util.UUID
+import java.util.*
 
-@Table(schema = Constant.SCHEMA, name = "categories")
-data class CategoryEntity(
+@Table(schema = Constant.SCHEMA, name = Constant.CATEGORY_TABLE)
+class CategoryEntity(
   var nameUz: String? = "",
   var nameRu: String? = "",
   var nameEn: String? = "",
