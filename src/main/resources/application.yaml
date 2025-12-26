@@ -20,7 +20,7 @@ springdoc:
 
 application:
   s3:
-    endpoint: ${APPLICATION_S3_ENDPOINT:http://seaweedfs_server:8333}
+    endpoint: ${APPLICATION_S3_ENDPOINT:https://seaweedfs_server:8333}
     access-key: ${APPLICATION_S3_ACCESS_KEY:secret}
     secret-key: ${APPLICATION_S3_SECRET_KEY:password}
 
