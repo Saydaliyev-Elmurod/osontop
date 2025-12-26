@@ -1,6 +1,5 @@
 package com.example.test.api
 
-import com.example.test.context.UserPrincipal
 import com.example.test.model.request.CategoryRequest
 import com.example.test.model.response.CategoryResponse
 import com.example.test.service.CategoryService
@@ -17,7 +16,6 @@ class CategoryController(private val categoryService: CategoryService) {
   @PostMapping
   fun create(
     @AuthenticationPrincipal
-    userPrincipal: UserPrincipal,
     @RequestBody request: CategoryRequest
   ): Mono<CategoryResponse> {
     return categoryService.create(request)
