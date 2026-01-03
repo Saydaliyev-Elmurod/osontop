@@ -4,7 +4,7 @@ server:
 
 spring:
   profiles:
-    active: ${BUILD_TYPE:local}
+    active: ${BUILD_TYPE:dev}
   application:
     name: kotlin-service
 
