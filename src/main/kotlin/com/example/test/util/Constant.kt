@@ -6,4 +6,5 @@ object Constant {
   const val USER_TABLE: String = "users"
   const val DEVICES_TABLE: String = "devices"
   const val SESSION_TABLE: String = "sessions"
+  const val SERVICES_TABLE: String = "services"
 }
