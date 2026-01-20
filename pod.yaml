@@ -1,0 +1,34 @@
+#  kubectl apply -f pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend
+  labels:
+    project: backend
+spec:
+  containers:
+    - name: web-ctr
+      image: elmurodsaydaliyeb/test:latest
+      ports:
+        - containerPort: 8080
+      resources:
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+      env:
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: postgres
+              key: postgres:5433 #test
+      restartPolicy: on-failure
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        initialDelaySeconds: 15
+      volumeMounts:
+        - mountPath: /opt/logs
+          name: log
+
+

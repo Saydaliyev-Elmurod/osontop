@@ -2,9 +2,9 @@ name: backend
 
 on:
   push:
-    branches: [ master ]
+    branches: [ prod ]
   pull_request:
-    branches: [ master ]
+    branches: [ prod ]
     types:
       - closed
 
@@ -12,7 +12,7 @@ jobs:
   build-backend:
     name: Build Backend
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true))
+    if: github.ref == 'refs/heads/prod' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true))
 
     steps:
       - name: Checkout source
